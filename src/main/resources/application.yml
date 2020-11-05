@@ -1,1 +1,15 @@
-
+spring:
+  datasource:
+    url: jdbc:mariadb://dbinstance.cveiyepjwzwd.ap-northeast-2.rds.amazonaws.com/main
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        default_batch_fetch_size: 1000
+        format_sql: true
+    open-in-view: false
+logging:
+  level:
+    org.hibernate.SQL: debug
