@@ -14,6 +14,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -64,13 +65,12 @@ public class User extends BaseEntity {
     private List<Collection> collections = new ArrayList<>();
 
     @Builder
-    public User(String name, String email, String password, String description, String countryCode, List<String> roles) {
+    public User(String name, String email, String password, String countryCode) {
         this.name = name;
         this.email = email;
         this.password = password;
-        this.description = description;
         this.countryCode = countryCode;
-        this.roles = roles;
+        this.roles = Collections.singletonList("USER");
         this.accessRange = AccessRange.PUBLIC;
         this.isEmailAgreed = false;
         this.isSmsAgreed = false;

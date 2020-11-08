@@ -19,9 +19,9 @@ public class ErrorResponse {
     private HttpStatus status;
     private String code;
     private String message;
-    private List<FieldError> errors;
+    private List<ErrorField> errors;
 
-    private ErrorResponse(ErrorCode code, String message, List<FieldError> errors) {
+    private ErrorResponse(ErrorCode code, String message, List<ErrorField> errors) {
         this.status = code.getStatus();
         this.code = code.getCode();
         this.message = message;
@@ -42,7 +42,7 @@ public class ErrorResponse {
     }
 
     public static ErrorResponse of(ErrorCode code, BindingResult bindingResult) {
-        return new ErrorResponse(code, code.getMessage(), FieldError.listFrom(bindingResult));
+        return new ErrorResponse(code, code.getMessage(), ErrorField.listFrom(bindingResult));
     }
 
     public static ErrorResponse from(BusinessException e) {
