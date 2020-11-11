@@ -11,29 +11,25 @@ import java.util.stream.Collectors;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class FieldError {
+public class ErrorField {
     private String field;
     private String input;
     private String message;
 
-    private FieldError(String field, String input, String message) {
+    private ErrorField(String field, String input, String message) {
         this.field = field;
         this.input = input;
         this.message = message;
     }
 
-    public static FieldError of(String field, String value, String reason) {
-        return new FieldError(field, value, reason);
+    public static ErrorField of(String field, String value, String message) {
+        return new ErrorField(field, value, message);
     }
 
-    public static List<FieldError> listOf(String field, String value, String reason) {
-        return Collections.singletonList(new FieldError(field, value, reason));
-    }
-
-    public static List<FieldError> listFrom(final BindingResult bindingResult) {
+    public static List<ErrorField> listFrom(final BindingResult bindingResult) {
         final List<org.springframework.validation.FieldError> fieldErrors = bindingResult.getFieldErrors();
         return fieldErrors.stream()
-                .map(error -> new FieldError(
+                .map(error -> new ErrorField(
                         error.getField(),
                         error.getRejectedValue() == null ? "" : error.getRejectedValue().toString(),
                         error.getDefaultMessage()))
