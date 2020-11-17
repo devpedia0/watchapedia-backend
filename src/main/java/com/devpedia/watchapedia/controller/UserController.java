@@ -23,14 +23,18 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import java.security.Principal;
 
 @Slf4j
 @RestController
+@Validated
 @RequiredArgsConstructor
 public class UserController {
 
@@ -137,4 +141,14 @@ public class UserController {
                 .build();
     }
 
+    @GetMapping("/users/email")
+    public UserDto.EmailCheckResult checkEmail(@RequestParam("email") @NotNull String email) {
+        return userService.isExistEmail(email);
+    }
+
+    @GetMapping("/users/me")
+    public UserDto.UserInfo getMyUserInfo(Principal principal) {
+        Long id = Long.valueOf(principal.getName());
+        return userService.getUserInfo(id);
+    }
 }

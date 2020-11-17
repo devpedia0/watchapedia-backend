@@ -8,7 +8,4 @@ import org.springframework.context.annotation.Bean;
 @SpringBootTest
 class WatchapediaApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
 }

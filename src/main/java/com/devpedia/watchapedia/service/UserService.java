@@ -1,6 +1,7 @@
 package com.devpedia.watchapedia.service;
 
 import com.devpedia.watchapedia.domain.User;
+import com.devpedia.watchapedia.dto.UserDto;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.ValueDuplicatedException;
 import com.devpedia.watchapedia.exception.ValueNotMatchException;
@@ -49,10 +50,32 @@ public class UserService {
         User user = userRepository.findByEmail(email);
 
         if (user == null)
-            throw new EntityNotExistException(ErrorCode.USER_NOT_FOUND);
+            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
         if (!passwordEncoder.matches(password, user.getPassword()))
             throw new ValueNotMatchException(ErrorCode.PASSWORD_NOT_MATCH);
 
         return user;
+    }
+
+    public UserDto.EmailCheckResult isExistEmail(String email) {
+        return UserDto.EmailCheckResult.builder()
+                .isExist(isDuplicated(email))
+                .build();
+    }
+
+    public UserDto.UserInfo getUserInfo(Long id) {
+        User user = userRepository.findById(id);
+        if (user == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        return UserDto.UserInfo.builder()
+                .name(user.getName())
+                .email(user.getEmail())
+                .countryCode(user.getCountryCode())
+                .description(user.getDescription())
+                .isEmailAgreed(user.getIsEmailAgreed())
+                .isPushAgreed(user.getIsPushAgreed())
+                .isSmsAgreed(user.getIsSmsAgreed())
+                .accessRange(user.getAccessRange())
+                .roles(user.getRoles())
+                .build();
     }
 }
