@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -25,10 +27,18 @@ public class Participant {
 
     private String description;
 
+    @OneToMany(mappedBy = "participant", cascade = CascadeType.ALL)
+    private List<ContentParticipant> contentList = new ArrayList<>();
+
     @Builder
     public Participant(String name, Image profileImage, String description) {
         this.name = name;
         this.profileImage = profileImage;
         this.description = description;
+    }
+
+    public void updateInfo(String name, String description) {
+        if (name != null && !name.isBlank()) this.name = name;
+        if (description != null) this.description = description;
     }
 }

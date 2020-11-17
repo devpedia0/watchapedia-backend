@@ -37,7 +37,7 @@ public abstract class Content {
     private String description;
 
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
-    private List<ContentPaticipant> participants = new ArrayList<>();
+    private List<ContentParticipant> participants = new ArrayList<>();
 
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
     private List<ContentImage> images = new ArrayList<>();
@@ -53,10 +53,30 @@ public abstract class Content {
         this.description = description;
     }
 
+    public void addParticipant(Participant participant, String role, String characterName) {
+        if (participant == null || role == null || characterName == null) return;
+        ContentParticipant cp = ContentParticipant.builder()
+                .content(this)
+                .participant(participant)
+                .characterName(characterName)
+                .role(role)
+                .build();
+        this.addContentParticipant(cp);
+    }
+
+    public void addTag(Tag tag) {
+        if (tag == null) return;
+        ContentTag ct = ContentTag.builder()
+                .content(this)
+                .tag(tag)
+                .build();
+        this.addContentTag(ct);
+    }
+
     // 연관관계 메서드
-    public void addContentPaticipant(ContentPaticipant contentPaticipant) {
-        this.participants.add(contentPaticipant);
-        contentPaticipant.setContent(this);
+    public void addContentParticipant(ContentParticipant contentParticipant) {
+        this.participants.add(contentParticipant);
+        contentParticipant.setContent(this);
     }
 
     public void addContentImage(ContentImage contentImage) {

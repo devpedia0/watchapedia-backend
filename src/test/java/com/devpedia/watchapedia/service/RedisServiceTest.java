@@ -5,7 +5,9 @@ import com.devpedia.watchapedia.repository.RedisRepository;
 import com.devpedia.watchapedia.security.JwtTokenProvider;
 import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.JwtException;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.mockito.InjectMocks;
@@ -19,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@TestMethodOrder(MethodOrderer.Alphanumeric.class)
 class RedisServiceTest {
 
     @InjectMocks

@@ -8,17 +8,18 @@ import java.io.Serializable;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ContentPaticipant {
+@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"participant_id", "content_id", "role"})})
+public class ContentParticipant {
 
-    @EmbeddedId
-    private ContentPaticipantId id;
+    @Id
+    @GeneratedValue
+    @Column(name = "content_participant_id")
+    private Long id;
 
-    @MapsId("participantId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "participant_id")
     private Participant participant;
 
-    @MapsId("contentId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id")
     private Content content;
@@ -26,27 +27,17 @@ public class ContentPaticipant {
     @Column(nullable = false)
     private String role;
 
-    private String charactorName;
+    private String characterName;
 
     @Builder
-    public ContentPaticipant(Participant participant, Content content, String role, String charactorName) {
-        this.id = new ContentPaticipantId(participant.getId(), content.getId());
+    public ContentParticipant(Participant participant, Content content, String role, String characterName) {
         this.participant = participant;
         this.content = content;
         this.role = role;
-        this.charactorName = charactorName;
+        this.characterName = characterName;
     }
 
     public void setContent(Content content) {
         this.content = content;
-    }
-
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ContentPaticipantId implements Serializable {
-        private Long participantId;
-        private Long contentId;
     }
 }

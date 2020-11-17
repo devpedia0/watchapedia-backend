@@ -2,6 +2,7 @@ package com.devpedia.watchapedia.config;
 
 import com.devpedia.watchapedia.security.JwtAuthenticationFilter;
 import com.devpedia.watchapedia.security.JwtTokenProvider;
+import com.devpedia.watchapedia.security.SecurityEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -12,7 +13,6 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -29,9 +29,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         web
                 .ignoring()
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations());
-//                .antMatchers("/*/signin", "/*/signup")
-//                .antMatchers("/*/oauth/**", "/**/refresh")
-//                .antMatchers("/**/exist/**");
+//                .antMatchers("/*/signin", "/*/signup");
     }
 
     @Override
@@ -43,8 +41,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
-                    .antMatchers("/admin/**").hasRole("ADMIN")
-//                    .antMatchers("/**").permitAll()
+                    .antMatchers("/admin/**").hasAuthority("ADMIN")
+                    .antMatchers("/**/me/**").authenticated()
+                .and()
+                .exceptionHandling()
+                    .authenticationEntryPoint(new SecurityEntryPoint())
                 .and()
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
     }

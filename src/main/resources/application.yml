@@ -7,12 +7,30 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
+        jdbc:
+          batch_size: 10
+        order_inserts: true
         default_batch_fetch_size: 1000
         format_sql: true
     open-in-view: false
   redis:
     port: 6379
     host: 222.111.195.42
+  servlet:
+    multipart:
+      max-file-size: 3MB
+
+cloud:
+  aws:
+    cloudfront:
+      domain: http://d1557x6sijzs1x.cloudfront.net
+    s3:
+      bucket: watchapedia-bucket
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false
+
 logging:
   level:
     com.devpedia.watchapedia.controller: debug
