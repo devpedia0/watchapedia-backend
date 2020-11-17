@@ -2,7 +2,9 @@ package com.devpedia.watchapedia.repository;
 
 import com.devpedia.watchapedia.domain.User;
 import com.devpedia.watchapedia.domain.enums.AccessRange;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -23,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ExtendWith(SpringExtension.class)
 @DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = Repository.class))
 @AutoConfigureTestDatabase
+@TestMethodOrder(MethodOrderer.Alphanumeric.class)
 class UserRepositoryTest {
 
     @Autowired

@@ -16,10 +16,9 @@ public enum ErrorCode {
     // C: Client error
     INPUT_VALUE_INVALID(BAD_REQUEST, "C001", "적절하지 않은 입력값이 있습니다"),
     USER_DUPLICATED(BAD_REQUEST, "C002", "이미 존재하는 회원입니다"),
-    USER_NOT_FOUND(BAD_REQUEST, "C003", "해당 회원은 존재하지 않습니다"),
+    ENTITY_NOT_FOUND(BAD_REQUEST, "C003", "해당 엔티티가 존재하지 않습니다"),
     PASSWORD_NOT_MATCH(BAD_REQUEST, "C004", "비밀번호가 일치하지 않습니다"),
     TOKEN_INVALID(UNAUTHORIZED, "C005", "유효하지 않은 토큰입니다");
-
 
     private final HttpStatus status;
     private final String code;

@@ -1,11 +1,11 @@
 package com.devpedia.watchapedia.dto;
 
+import com.devpedia.watchapedia.domain.enums.AccessRange;
 import lombok.*;
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import javax.persistence.Column;
+import javax.validation.constraints.*;
+import java.util.List;
 
 public class UserDto {
     @Getter @Setter
@@ -53,5 +53,39 @@ public class UserDto {
         private String email;
         @NotBlank
         private String name;
+    }
+
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class EmailCheckResult {
+        @NotBlank
+        private boolean isExist;
+    }
+
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserInfo {
+        @NotBlank
+        private String name;
+        @NotBlank
+        private String email;
+
+        private String description;
+        @NotBlank
+        private String countryCode;
+        @NotBlank
+        private AccessRange accessRange;
+        @NotNull
+        private Boolean isEmailAgreed;
+        @NotNull
+        private Boolean isSmsAgreed;
+        @NotNull
+        private Boolean isPushAgreed;
+        @NotNull
+        private List<String> roles;
     }
 }
