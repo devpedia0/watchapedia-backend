@@ -29,7 +29,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         web
                 .ignoring()
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations());
-//                .antMatchers("/*/signin", "/*/signup")
+//                .antMatchers("/signin", "/signup")
 //                .antMatchers("/*/oauth/**", "/**/refresh")
 //                .antMatchers("/**/exist/**");
     }
