@@ -88,4 +88,24 @@ public class UserDto {
         @NotNull
         private List<String> roles;
     }
+
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserInfoEditRequest {
+        private String name;
+
+        private String description;
+        @Pattern(regexp = "^[A-Z]{2}$", message = "국가코드는 2자리 영어 대문자입니다")
+        private String countryCode;
+
+        private AccessRange accessRange;
+
+        private Boolean isEmailAgreed;
+
+        private Boolean isSmsAgreed;
+
+        private Boolean isPushAgreed;
+    }
 }
