@@ -78,6 +78,34 @@ public class User extends BaseEntity {
         this.isDeleted = false;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public void setAccessRange(AccessRange accessRange) {
+        this.accessRange = accessRange;
+    }
+
+    public void setEmailAgreed(Boolean emailAgreed) {
+        isEmailAgreed = emailAgreed;
+    }
+
+    public void setSmsAgreed(Boolean smsAgreed) {
+        isSmsAgreed = smsAgreed;
+    }
+
+    public void setPushAgreed(Boolean pushAgreed) {
+        isPushAgreed = pushAgreed;
+    }
+
     // 연관관계 메서드
     public void addCollection(Collection collection) {
         this.collections.add(collection);

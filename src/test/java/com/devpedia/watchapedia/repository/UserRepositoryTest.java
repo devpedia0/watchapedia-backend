@@ -69,10 +69,10 @@ class UserRepositoryTest {
     public void save_EmptyArgs_ThrowException() throws Exception {
         //given
         User expectedUser = User.builder()
-                .email("aaa@bb.com")
-                .password("1111")
+//                .email("aaa@bb.com")
+//                .password("1111")
 //                .name("testName")
-                .countryCode("KR")
+//                .countryCode("KR")
                 .build();
 
         //when
