@@ -70,7 +70,7 @@ public class UserController {
                     @ResponseHeader(name = JwtTokenProvider.ACCESS_TOKEN_HEADER, description = "엑세스 토큰", response = String.class),
                     @ResponseHeader(name = JwtTokenProvider.REFRESH_TOKEN_HEADER, description = "리프레쉬 토큰", response = String.class)
             }),
-            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 등록 안된 유저 \t\n C004: 비밀번호 불일치")
+            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C002: 등록 안된 유저 \t\n C004: 비밀번호 불일치")
     })
     @PostMapping("/signin")
     public ResponseEntity<Void> signin(@RequestBody @Valid UserDto.SigninRequest request) {
@@ -131,7 +131,7 @@ public class UserController {
             @ApiResponse(code = 401, message = "C005: 유효하지 않은 리프레쉬 토큰")
     })
     @PostMapping("/token")
-    public ResponseEntity<Void> refreshAceessToken(
+    public ResponseEntity<Void> refreshAccessToken(
             @RequestHeader(name = JwtTokenProvider.REFRESH_TOKEN_HEADER) String refreshToken) {
 
         String accessToken = redisService.getAccessTokenOrThrow(refreshToken);
@@ -150,5 +150,11 @@ public class UserController {
     public UserDto.UserInfo getMyUserInfo(Principal principal) {
         Long id = Long.valueOf(principal.getName());
         return userService.getUserInfo(id);
+    }
+
+    @PutMapping("/users/me")
+    public void editSettings(@RequestBody @Valid UserDto.UserInfoEditRequest request, Principal principal) {
+        Long id = Long.valueOf(principal.getName());
+        userService.editUserInfo(id, request);
     }
 }

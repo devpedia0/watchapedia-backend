@@ -1,6 +1,7 @@
 package com.devpedia.watchapedia.service;
 
 import com.devpedia.watchapedia.domain.User;
+import com.devpedia.watchapedia.domain.enums.AccessRange;
 import com.devpedia.watchapedia.dto.UserDto;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.ValueDuplicatedException;
@@ -174,7 +175,7 @@ class UserServiceTest {
     }
 
     @Test
-    public void checkEmail_NotExist_ReturnFalse() throws Exception {
+    public void checkEmail_UserNotExist_ReturnFalse() throws Exception {
         // given
         User user = User.builder()
                 .email("aaa@bb.ccc")
@@ -214,7 +215,7 @@ class UserServiceTest {
     }
 
     @Test
-    public void getUserInfo_NotExist_ThrowException() throws Exception {
+    public void getUserInfo_UserNotExist_ThrowException() throws Exception {
         // given
         User user = User.builder()
                 .email("aaa@bb.ccc")
@@ -231,5 +232,83 @@ class UserServiceTest {
 
         // then
         assertThat(throwable).isInstanceOf(EntityNotExistException.class);
+    }
+
+    @Test
+    public void editUserInfo_UserNotExist_ThrowException() throws Exception {
+        // given
+        User user = User.builder()
+                .email("aaa@bb.ccc")
+                .password("1234")
+                .name("test")
+                .countryCode("KR")
+                .build();
+
+        UserDto.UserInfoEditRequest userInfo = UserDto.UserInfoEditRequest.builder()
+                .build();
+
+        given(userRepository.findById(anyLong()))
+                .willReturn(null);
+
+        // when
+        Throwable throwable = catchThrowable(() -> userService.editUserInfo(1L, userInfo));
+
+        // then
+        assertThat(throwable).isInstanceOf(EntityNotExistException.class);
+    }
+
+    @Test
+    public void editUserInfo_OptionIsNull_PassSetting() throws Exception {
+        // given
+        User user = mock(User.class);
+
+        UserDto.UserInfoEditRequest userInfo = UserDto.UserInfoEditRequest.builder()
+                .build();
+
+        given(userRepository.findById(anyLong()))
+                .willReturn(user);
+
+        // when
+        userService.editUserInfo(1L, userInfo);
+
+        // then
+        verify(user, times(0)).setName(anyString());
+        verify(user, times(0)).setDescription(anyString());
+        verify(user, times(0)).setCountryCode(anyString());
+        verify(user, times(0)).setAccessRange(any(AccessRange.class));
+        verify(user, times(0)).setSmsAgreed(anyBoolean());
+        verify(user, times(0)).setEmailAgreed(anyBoolean());
+        verify(user, times(0)).setPushAgreed(anyBoolean());
+    }
+
+    @Test
+    public void editUserInfo_OptionIsNotNull_Setting() throws Exception {
+        // given
+        User user = mock(User.class);
+
+        UserDto.UserInfoEditRequest userInfo = UserDto.UserInfoEditRequest.builder()
+                .name("Park")
+                .description("desc")
+                .countryCode("KR")
+                .accessRange(AccessRange.PUBLIC)
+                .isEmailAgreed(true)
+                .isPushAgreed(true)
+                .isSmsAgreed(true)
+                .build();
+
+        given(userRepository.findById(anyLong()))
+                .willReturn(user);
+
+        // when
+        userService.editUserInfo(1L, userInfo);
+
+        // then
+        verify(user, times(1)).setName(anyString());
+        verify(user, times(1)).setDescription(anyString());
+        verify(user, times(1)).setCountryCode(anyString());
+        verify(user, times(1)).setAccessRange(any(AccessRange.class));
+        verify(user, times(1)).setSmsAgreed(anyBoolean());
+        verify(user, times(1)).setEmailAgreed(anyBoolean());
+        verify(user, times(1)).setPushAgreed(anyBoolean());
     }
 }
