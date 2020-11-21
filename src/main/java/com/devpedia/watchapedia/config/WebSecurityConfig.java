@@ -28,8 +28,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(WebSecurity web) throws Exception {
         web
                 .ignoring()
-                .requestMatchers(PathRequest.toStaticResources().atCommonLocations());
-//                .antMatchers("/*/signin", "/*/signup");
+                .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
+                .antMatchers("/signup", "/signin", "/oauth/facebook", "/token", "/users/email")
+                .antMatchers("/participants", "/tags");
     }
 
     @Override
@@ -38,6 +39,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .httpBasic().disable()
                 .csrf().disable()
                 .formLogin().disable()
+                .cors()
+                .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
