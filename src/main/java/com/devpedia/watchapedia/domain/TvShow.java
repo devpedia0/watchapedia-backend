@@ -1,6 +1,7 @@
 package com.devpedia.watchapedia.domain;
 
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -25,6 +26,7 @@ public class TvShow extends Content {
     @Column(name = "netflix_yn", nullable = false)
     private Boolean isNetflixContent;
 
+    @Builder
     public TvShow(Image posterImage, String mainTitle, String category, LocalDate productionDate, String description,
                   String originTitle, String countryCode, Boolean isWatchaContent, Boolean isNetflixContent) {
         super(posterImage, mainTitle, category, productionDate, description);
