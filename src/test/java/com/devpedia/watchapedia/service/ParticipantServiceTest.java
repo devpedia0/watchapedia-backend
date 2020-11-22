@@ -70,24 +70,6 @@ class ParticipantServiceTest {
     }
 
     @Test
-    public void findAll_ParticipantWithoutImage_ReturnList() throws Exception {
-        // given
-        Participant participant = Participant.builder()
-                .name("name")
-                .description("desc")
-                .profileImage(null)
-                .build();
-        given(participantRepository.findAll())
-                .willReturn(Collections.singletonList(participant));
-
-        // when
-        List<ParticipantDto.ParticipantInfo> list = participantService.findAll();
-
-        // then
-        assertThat(list).hasSize(1);
-    }
-
-    @Test
     public void searchWithPaging_ParticipantWithoutImage_ReturnList() throws Exception {
         // given
         Participant participant = Participant.builder()

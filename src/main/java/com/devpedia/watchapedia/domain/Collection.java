@@ -43,8 +43,4 @@ public class Collection extends BaseEntity {
         this.description = description;
         this.isDeleted = false;
     }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
 }

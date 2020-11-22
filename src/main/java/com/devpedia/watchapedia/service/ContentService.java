@@ -2,11 +2,9 @@ package com.devpedia.watchapedia.service;
 
 import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.enums.ImageCategory;
-import com.devpedia.watchapedia.dto.BookDto;
-import com.devpedia.watchapedia.dto.MovieDto;
-import com.devpedia.watchapedia.dto.ParticipantDto;
-import com.devpedia.watchapedia.dto.TvShowDto;
+import com.devpedia.watchapedia.dto.*;
 import com.devpedia.watchapedia.repository.*;
+import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,16 +21,14 @@ import java.util.stream.Collectors;
 public class ContentService {
 
     private final S3Service s3Service;
-    private final MovieRepository movieRepository;
-    private final BookRepository bookRepository;
-    private final TvShowRepository tvShowRepository;
+    private final ContentRepository contentRepository;
     private final ParticipantRepository participantRepository;
     private final TagRepository tagRepository;
 
-    public void saveBookWithImage(BookDto.BookInsertRequest request, MultipartFile file) {
-        Image posterImage = Image.of(file, ImageCategory.POSTER);
+    public void saveBookWithImage(BookDto.BookInsertRequest request, MultipartFile poster) {
+        Image posterImage = Image.of(poster, ImageCategory.POSTER);
 
-        s3Service.upload(file, posterImage.getPath());
+        s3Service.upload(poster, posterImage.getPath());
 
         Book book = Book.builder()
                 .posterImage(posterImage)
@@ -46,15 +42,15 @@ public class ContentService {
                 .contents(request.getContents())
                 .build();
 
-        addParticipantsAndTags(book, request.getRoleList(), request.getTagList());
+        addParticipantsAndTags(book, request.getRoles(), request.getTags());
 
-        bookRepository.save(book);
+        contentRepository.save(book);
     }
 
-    public void saveMovieWithImage(MovieDto.MovieInsertRequest request, MultipartFile file) {
-        Image posterImage = Image.of(file, ImageCategory.POSTER);
+    public void saveMovieWithImage(MovieDto.MovieInsertRequest request, MultipartFile poster) {
+        Image posterImage = Image.of(poster, ImageCategory.POSTER);
 
-        s3Service.upload(file, posterImage.getPath());
+        s3Service.upload(poster, posterImage.getPath());
 
         Movie movie = Movie.builder()
                 .posterImage(posterImage)
@@ -71,15 +67,15 @@ public class ContentService {
                 .isWatchaContent(request.getIsWatchaContent())
                 .build();
 
-        addParticipantsAndTags(movie, request.getRoleList(), request.getTagList());
+        addParticipantsAndTags(movie, request.getRoles(), request.getTags());
 
-        movieRepository.save(movie);
+        contentRepository.save(movie);
     }
 
-    public void saveTvShowWithImage(TvShowDto.TvShowInsertRequest request, MultipartFile file) {
-        Image posterImage = Image.of(file, ImageCategory.POSTER);
+    public void saveTvShowWithImage(TvShowDto.TvShowInsertRequest request, MultipartFile poster) {
+        Image posterImage = Image.of(poster, ImageCategory.POSTER);
 
-        s3Service.upload(file, posterImage.getPath());
+        s3Service.upload(poster, posterImage.getPath());
 
         TvShow tvShow = TvShow.builder()
                 .posterImage(posterImage)
@@ -93,20 +89,20 @@ public class ContentService {
                 .isWatchaContent(request.getIsWatchaContent())
                 .build();
 
-        addParticipantsAndTags(tvShow, request.getRoleList(), request.getTagList());
+        addParticipantsAndTags(tvShow, request.getRoles(), request.getTags());
 
-        tvShowRepository.save(tvShow);
+        contentRepository.save(tvShow);
     }
 
-    private void addParticipantsAndTags(Content content, List<ParticipantDto.ParticipantRole> roleList, List<Long> tagList) {
-        addParticipants(content, roleList);
-        addTags(content, tagList);
+    private void addParticipantsAndTags(Content content, List<ParticipantDto.ParticipantRole> roles, List<Long> tags) {
+        addParticipants(content, roles);
+        addTags(content, tags);
     }
 
-    private void addParticipants(Content content, List<ParticipantDto.ParticipantRole> roleList) {
-        if (content == null || roleList == null) return;
+    private void addParticipants(Content content, List<ParticipantDto.ParticipantRole> roles) {
+        if (content == null || roles == null) return;
 
-        Map<Long, ParticipantDto.ParticipantRole> map = roleList.stream()
+        Map<Long, ParticipantDto.ParticipantRole> map = roles.stream()
                 .collect(Collectors.toMap(ParticipantDto.ParticipantRole::getParticipantId, role -> role));
 
         List<Participant> participants = participantRepository.findListIn(map.keySet());
@@ -117,15 +113,27 @@ public class ContentService {
         }
     }
 
-    private void addTags(Content content, List<Long> tagList) {
-        if (content == null || tagList == null) return;
+    private void addTags(Content content, List<Long> tags) {
+        if (content == null || tags == null) return;
 
-        List<Tag> tags = tagRepository.findListIn(new HashSet<>(tagList));
+        List<Tag> addedTags = tagRepository.findListIn(new HashSet<>(tags));
 
-        for (Tag tag : tags) {
+        for (Tag tag : addedTags) {
             content.addTag(tag);
         }
     }
 
+    public List<ContentDto.CommonContentInfo> searchAllWithPaging(String query, int page, int size) {
+        List<Content> list = contentRepository.searchWithPaging(Content.class, query, page, size);
 
+        return list.stream()
+                .map(content -> ContentDto.CommonContentInfo.builder()
+                        .id(content.getId())
+                        .contentType(content.getDtype())
+                        .mainTitle(content.getMainTitle())
+                        .productionDate(content.getProductionDate())
+                        .posterImagePath(UrlUtil.getCloudFrontUrl(content.getPosterImage().getPath()))
+                        .build())
+                .collect(Collectors.toList());
+    }
 }

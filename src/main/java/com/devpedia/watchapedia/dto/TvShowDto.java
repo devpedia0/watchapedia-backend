@@ -31,8 +31,8 @@ public class TvShowDto {
         @NotNull
         private Boolean isNetflixContent;
 
-        private List<ParticipantDto.ParticipantRole> roleList;
+        private List<ParticipantDto.ParticipantRole> roles;
 
-        private List<Long> tagList;
+        private List<Long> tags;
     }
 }

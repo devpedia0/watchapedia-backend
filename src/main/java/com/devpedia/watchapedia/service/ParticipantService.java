@@ -24,12 +24,12 @@ public class ParticipantService {
     private final S3Service s3Service;
     private final ParticipantRepository participantRepository;
 
-    public void addWithImage(ParticipantDto.ParticipantInsertRequest request, MultipartFile file) {
+    public void addWithImage(ParticipantDto.ParticipantInsertRequest request, MultipartFile profile) {
         Image profileImage = null;
 
-        if (file != null && !file.isEmpty()) {
-            profileImage = Image.of(file, ImageCategory.POSTER);
-            s3Service.upload(file, profileImage.getPath());
+        if (profile != null && !profile.isEmpty()) {
+            profileImage = Image.of(profile, ImageCategory.POSTER);
+            s3Service.upload(profile, profileImage.getPath());
         }
 
         Participant participant = Participant.builder()
@@ -41,23 +41,8 @@ public class ParticipantService {
         participantRepository.save(participant);
     }
 
-    public List<ParticipantDto.ParticipantInfo> findAll() {
-        List<Participant> list = participantRepository.findAll();
-
-        return list.stream()
-                .map(participant -> ParticipantDto.ParticipantInfo.builder()
-                        .id(participant.getId())
-                        .name(participant.getName())
-                        .description(participant.getDescription())
-                        .profileImagePath(
-                                participant.getProfileImage() != null
-                                        ? UrlUtil.getCloudFrontUrl(participant.getProfileImage().getPath()) : null)
-                        .build())
-                .collect(Collectors.toList());
-    }
-
-    public List<ParticipantDto.ParticipantInfo> searchWithPaging(String search, int page, int size) {
-        List<Participant> list = participantRepository.searchWithPaging(search, page, size);
+    public List<ParticipantDto.ParticipantInfo> searchWithPaging(String query, int page, int size) {
+        List<Participant> list = participantRepository.searchWithPaging(query, page, size);
 
         return list.stream()
                 .map(participant -> ParticipantDto.ParticipantInfo.builder()

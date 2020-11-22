@@ -1,6 +1,9 @@
 package com.devpedia.watchapedia.repository;
 
+import com.devpedia.watchapedia.domain.Collection;
+import com.devpedia.watchapedia.domain.CollectionContent;
 import com.devpedia.watchapedia.domain.User;
+import com.devpedia.watchapedia.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -17,6 +20,14 @@ public class UserRepository {
         em.persist(user);
     }
 
+    public void save(CollectionContent collectionContent) {
+        em.persist(collectionContent);
+    }
+
+    public void save(Collection collection) {
+        em.persist(collection);
+    }
+
     public User findById(Long id) {
         return em.find(User.class, id);
     }
@@ -31,5 +42,12 @@ public class UserRepository {
                 .getResultList();
 
         return result.isEmpty() ? null : result.get(0);
+    }
+
+    public List<User> findAll() {
+        return em.createQuery(
+                "select u " +
+                        "from User u ", User.class)
+                .getResultList();
     }
 }

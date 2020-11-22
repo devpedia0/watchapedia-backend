@@ -23,7 +23,7 @@ public class JwtTokenProvider {
     @Value("${spring.jwt.secret-key}")
     private String secretKey;
 
-    private static final long ACCESS_TOKEN_EXPIRE_TIME = 30 * 60 * 1000L;
+    private static final long ACCESS_TOKEN_EXPIRE_TIME = 60 * 60 * 1000L;
     private static final long REFRESH_TOKEN_EXPIRE_TIME = 7 * 24 * 60 * 60 * 1000L;
 
     public static final String TYPE_ACCESS_TOKEN = "access";
@@ -88,14 +88,6 @@ public class JwtTokenProvider {
 
     public String extractToken(HttpServletRequest request) {
         return request.getHeader(ACCESS_TOKEN_HEADER);
-    }
-
-    public boolean isValidToken(String token) {
-        try {
-            return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody() != null;
-        } catch (JwtException e) {
-            return false;
-        }
     }
 
     @Data

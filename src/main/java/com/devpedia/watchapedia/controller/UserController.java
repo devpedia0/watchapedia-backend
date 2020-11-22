@@ -13,6 +13,9 @@ import com.devpedia.watchapedia.util.UrlUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import io.swagger.annotations.ResponseHeader;
@@ -22,6 +25,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +35,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.security.Principal;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -43,7 +48,6 @@ public class UserController {
     private final RedisRepository redisRepository;
     private final RedisService redisService;
 
-    private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -52,17 +56,10 @@ public class UserController {
             @ApiResponse(code = 201, message = "회원가입 완료"),
             @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C002: 이미 등록된 유저")
     })
-    @PostMapping("/signup")
+    @PostMapping("/auth/signup")
     @ResponseStatus(HttpStatus.CREATED)
     public void signup(@RequestBody @Valid UserDto.SignupRequest request) {
-        userService.join(
-                User.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .name(request.getName())
-                .countryCode(request.getCountryCode())
-                .build()
-        );
+        userService.join(request);
     }
 
     @ApiResponses({
@@ -72,7 +69,7 @@ public class UserController {
             }),
             @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C002: 등록 안된 유저 \t\n C004: 비밀번호 불일치")
     })
-    @PostMapping("/signin")
+    @PostMapping("/auth/signin")
     public ResponseEntity<Void> signin(@RequestBody @Valid UserDto.SigninRequest request) {
         User user = userService.getMatchedUser(request.getEmail(), request.getPassword());
 
@@ -94,7 +91,7 @@ public class UserController {
             }),
             @ApiResponse(code = 400, message = "B001: 페이스북 오류 \t\n C001: 부적절한 입력값")
     })
-    @PostMapping("/oauth/facebook")
+    @PostMapping("/auth/facebook")
     public ResponseEntity<Void> oauthFacebook(@RequestBody @Valid UserDto.OAuthTokenInfo tokenInfo) {
         String url = UrlUtil.buildFacebookUrl(UserDto.FacebookUserInfo.class, tokenInfo.getAccessToken());
 
@@ -130,7 +127,7 @@ public class UserController {
             @ApiResponse(code = 400, message = "C001: 리프레쉬 토큰 헤더 빈값 오류"),
             @ApiResponse(code = 401, message = "C005: 유효하지 않은 리프레쉬 토큰")
     })
-    @PostMapping("/token")
+    @PostMapping("/auth/token")
     public ResponseEntity<Void> refreshAccessToken(
             @RequestHeader(name = JwtTokenProvider.REFRESH_TOKEN_HEADER) String refreshToken) {
 
@@ -141,7 +138,7 @@ public class UserController {
                 .build();
     }
 
-    @GetMapping("/users/email")
+    @GetMapping("/public/email")
     public UserDto.EmailCheckResult checkEmail(@RequestParam("email") @NotNull String email) {
         return userService.isExistEmail(email);
     }
@@ -156,5 +153,24 @@ public class UserController {
     public void editSettings(@RequestBody @Valid UserDto.UserInfoEditRequest request, Principal principal) {
         Long id = Long.valueOf(principal.getName());
         userService.editUserInfo(id, request);
+    }
+
+    @PostMapping("/admin/users/{id}/collections")
+    public void addCollection(@PathVariable("id") Long userId,
+                              @RequestBody @Valid UserDto.CollectionInsertRequest request) {
+        userService.addCollection(userId, request);
+    }
+
+    @GetMapping("/admin/users")
+    public MappingJacksonValue getUserInfos() {
+        List<UserDto.UserInfo> users = userService.getAllUserInfo();
+
+        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "email", "roles");
+        FilterProvider provider = new SimpleFilterProvider().addFilter("userInfoFilter", filter);
+
+        MappingJacksonValue mappingJacksonValue = new MappingJacksonValue(users);
+        mappingJacksonValue.setFilters(provider);
+
+        return mappingJacksonValue;
     }
 }

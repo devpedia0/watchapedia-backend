@@ -6,11 +6,9 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
@@ -25,7 +23,8 @@ public class MovieController {
                     required = true, paramType = "formData")
     })
     @PostMapping(value = "/admin/movies", consumes = {MediaType.MULTIPART_MIXED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
-    public void addMovie(@RequestPart("body") MovieDto.MovieInsertRequest request, @RequestPart("file") MultipartFile file) {
-        contentService.saveMovieWithImage(request, file);
+    @ResponseStatus(HttpStatus.CREATED)
+    public void addMovie(@RequestPart("body") MovieDto.MovieInsertRequest request, @RequestPart("poster") MultipartFile poster) {
+        contentService.saveMovieWithImage(request, poster);
     }
 }

@@ -13,9 +13,9 @@ public class RedisRepository {
 
     private final StringRedisTemplate redisTemplate;
 
-    public void addRefreshToken(Long userId, String token) {
+    public void addRefreshToken(Long userId, String refreshToken) {
         HashOperations<String, Object, Object> hash = redisTemplate.opsForHash();
-        hash.put(REFRESH_TOKEN_MAP_KEY, String.valueOf(userId), token);
+        hash.put(REFRESH_TOKEN_MAP_KEY, String.valueOf(userId), refreshToken);
     }
 
     public String getRefreshToken(Long userId) {

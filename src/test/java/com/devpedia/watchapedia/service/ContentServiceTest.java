@@ -20,7 +20,6 @@ import java.time.LocalDate;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -34,11 +33,7 @@ class ContentServiceTest {
     @Mock
     private S3Service s3Service;
     @Mock
-    private MovieRepository movieRepository;
-    @Mock
-    private BookRepository bookRepository;
-    @Mock
-    private TvShowRepository tvShowRepository;
+    private ContentRepository contentRepository;
     @Mock
     private ParticipantRepository participantRepository;
     @Mock
@@ -65,8 +60,8 @@ class ContentServiceTest {
                 .page(11000)
                 .productionDate(LocalDate.of(2020, 10, 30))
                 .subtitle("subtitle")
-                .roleList(Collections.singletonList(role))
-                .tagList(Collections.singletonList(1L))
+                .roles(Collections.singletonList(role))
+                .tags(Collections.singletonList(1L))
                 .build();
 
         MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
@@ -82,7 +77,7 @@ class ContentServiceTest {
         contentService.saveBookWithImage(request, file);
 
         // then
-        verify(bookRepository, times(1)).save(any(Book.class));
+        verify(contentRepository, times(1)).save(any(Book.class));
     }
 
     @Test
@@ -97,8 +92,8 @@ class ContentServiceTest {
                 .page(11000)
                 .productionDate(LocalDate.of(2020, 10, 30))
                 .subtitle("subtitle")
-                .roleList(null)
-                .tagList(null)
+                .roles(null)
+                .tags(null)
                 .build();
 
         MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
@@ -107,7 +102,7 @@ class ContentServiceTest {
         contentService.saveBookWithImage(request, file);
 
         // then
-        verify(bookRepository, times(1)).save(any(Book.class));
+        verify(contentRepository, times(1)).save(any(Book.class));
     }
 
     @Test
@@ -134,8 +129,8 @@ class ContentServiceTest {
                 .originTitle("title")
                 .runningTimeInMinutes(110)
                 .totalAudience(10000L)
-                .roleList(Collections.singletonList(role))
-                .tagList(Collections.singletonList(1L))
+                .roles(Collections.singletonList(role))
+                .tags(Collections.singletonList(1L))
                 .build();
 
         MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
@@ -151,7 +146,7 @@ class ContentServiceTest {
         contentService.saveMovieWithImage(request, file);
 
         // then
-        verify(movieRepository, times(1)).save(any(Movie.class));
+        verify(contentRepository, times(1)).save(any(Movie.class));
     }
 
     @Test
@@ -169,8 +164,8 @@ class ContentServiceTest {
                 .originTitle("title")
                 .runningTimeInMinutes(110)
                 .totalAudience(10000L)
-                .roleList(null)
-                .tagList(null)
+                .roles(null)
+                .tags(null)
                 .build();
 
         MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
@@ -179,7 +174,7 @@ class ContentServiceTest {
         contentService.saveMovieWithImage(request, file);
 
         // then
-        verify(movieRepository, times(1)).save(any(Movie.class));
+        verify(contentRepository, times(1)).save(any(Movie.class));
     }
 
     @Test
@@ -203,8 +198,8 @@ class ContentServiceTest {
                 .isNetflixContent(true)
                 .isWatchaContent(true)
                 .originTitle("title")
-                .roleList(Collections.singletonList(role))
-                .tagList(Collections.singletonList(1L))
+                .roles(Collections.singletonList(role))
+                .tags(Collections.singletonList(1L))
                 .build();
 
         MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
@@ -220,7 +215,7 @@ class ContentServiceTest {
         contentService.saveTvShowWithImage(request, file);
 
         // then
-        verify(tvShowRepository, times(1)).save(any(TvShow.class));
+        verify(contentRepository, times(1)).save(any(TvShow.class));
     }
 
     @Test
@@ -235,8 +230,8 @@ class ContentServiceTest {
                 .isNetflixContent(true)
                 .isWatchaContent(true)
                 .originTitle("title")
-                .roleList(null)
-                .tagList(null)
+                .roles(null)
+                .tags(null)
                 .build();
 
         MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
@@ -245,6 +240,6 @@ class ContentServiceTest {
         contentService.saveTvShowWithImage(request, file);
 
         // then
-        verify(tvShowRepository, times(1)).save(any(TvShow.class));
+        verify(contentRepository, times(1)).save(any(TvShow.class));
     }
 }

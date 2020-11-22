@@ -47,32 +47,32 @@ class ParticipantRepositoryTest {
     @Test
     public void findListIn_Correct_ReturnList() throws Exception {
         // given
-        Participant participant1 = Participant.builder()
+        Participant expected1 = Participant.builder()
                 .name("p1")
                 .description("desc1")
                 .build();
 
-        Participant participant2 = Participant.builder()
+        Participant expected2 = Participant.builder()
                 .name("p2")
                 .description("desc2")
                 .build();
 
-        Participant participant3 = Participant.builder()
-                .name("p2")
-                .description("desc2")
+        Participant expected3 = Participant.builder()
+                .name("p3")
+                .description("desc3")
                 .build();
 
-        em.persist(participant1);
-        em.persist(participant2);
-        em.persist(participant3);
+        em.persist(expected1);
+        em.persist(expected2);
+        em.persist(expected3);
 
-        Set<Long> ids = new HashSet<>(Arrays.asList(participant1.getId(), participant2.getId(), participant3.getId()));
+        Set<Long> ids = new HashSet<>(Arrays.asList(expected1.getId(), expected2.getId(), expected3.getId()));
 
         // when
-        List<Participant> list = participantRepository.findListIn(ids);
+        List<Participant> actualList = participantRepository.findListIn(ids);
 
         // then
-        assertThat(list).hasSize(3);
+        assertThat(actualList).hasSize(3);
     }
 
     @Test
@@ -81,67 +81,67 @@ class ParticipantRepositoryTest {
         Set<Long> ids = null;
 
         // when
-        List<Participant> list = participantRepository.findListIn(ids);
+        List<Participant> actualList = participantRepository.findListIn(ids);
 
         // then
-        assertThat(list).isNotNull().hasSize(0);
+        assertThat(actualList).isNotNull().hasSize(0);
     }
 
     @Test
     public void searchWithPaging_WithQuery_PagingQueriedList() throws Exception {
         // given
-        Participant participant1 = Participant.builder()
+        Participant expected1 = Participant.builder()
                 .name("aaa")
                 .description("desc1")
                 .build();
 
-        Participant participant2 = Participant.builder()
+        Participant expected2 = Participant.builder()
                 .name("bbb")
                 .description("desc2")
                 .build();
 
-        Participant participant3 = Participant.builder()
+        Participant expected3 = Participant.builder()
                 .name("aab")
                 .description("desc2")
                 .build();
 
-        em.persist(participant1);
-        em.persist(participant2);
-        em.persist(participant3);
+        em.persist(expected1);
+        em.persist(expected2);
+        em.persist(expected3);
 
         // when
-        List<Participant> list = participantRepository.searchWithPaging("aa", 1, 5);
+        List<Participant> actualList = participantRepository.searchWithPaging("aa", 1, 5);
 
         // then
-        assertThat(list).hasSize(2);
+        assertThat(actualList).hasSize(2);
     }
 
     @Test
     public void searchWithPaging_WithoutQuery_PagingOnlyList() throws Exception {
         // given
-        Participant participant1 = Participant.builder()
+        Participant expected1 = Participant.builder()
                 .name("aaa")
                 .description("desc1")
                 .build();
 
-        Participant participant2 = Participant.builder()
+        Participant expected2 = Participant.builder()
                 .name("bbb")
                 .description("desc2")
                 .build();
 
-        Participant participant3 = Participant.builder()
+        Participant expected3 = Participant.builder()
                 .name("aab")
                 .description("desc2")
                 .build();
 
-        em.persist(participant1);
-        em.persist(participant2);
-        em.persist(participant3);
+        em.persist(expected1);
+        em.persist(expected2);
+        em.persist(expected3);
 
         // when
-        List<Participant> list = participantRepository.searchWithPaging("", 1, 5);
+        List<Participant> actualList = participantRepository.searchWithPaging("", 1, 5);
 
         // then
-        assertThat(list).hasSize(3);
+        assertThat(actualList).hasSize(3);
     }
 }

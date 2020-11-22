@@ -58,8 +58,6 @@ class UserControllerTest {
 
     @Autowired
     private MockMvc mvc;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @SpyBean
     private ObjectMapper objectMapper;
@@ -82,26 +80,6 @@ class UserControllerTest {
     }
 
     @Test
-    public void signup_CorrectInput_Status201() throws Exception {
-        // given
-        UserDto.SignupRequest request = UserDto.SignupRequest.builder()
-                .email("aaa@bb.ccc")
-                .password("1234")
-                .name("testName")
-                .countryCode("KR")
-                .build();
-
-        // when
-        ResultActions actions = mvc.perform(post("/signup")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)));
-
-        // then
-        verify(userService, times(1)).join(any(User.class));
-        actions.andExpect(status().isCreated());
-    }
-
-    @Test
     public void signup_UserExist_Status400AndC002() throws Exception {
         // given
         UserDto.SignupRequest request = UserDto.SignupRequest.builder()
@@ -112,15 +90,14 @@ class UserControllerTest {
                 .build();
 
         willThrow(new ValueDuplicatedException(ErrorCode.USER_DUPLICATED))
-                .given(userService).join(any(User.class));
+                .given(userService).join(any(UserDto.SignupRequest.class));
 
         // when
-        ResultActions actions = mvc.perform(post("/signup")
+        ResultActions actions = mvc.perform(post("/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
         // then
-        verify(userService, times(1)).join(any(User.class));
         actions.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C002"));
     }
@@ -132,12 +109,12 @@ class UserControllerTest {
                 .build();
 
         // when
-        ResultActions actions = mvc.perform(post("/signup")
+        ResultActions actions = mvc.perform(post("/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
         // then
-        verify(userService, times(0)).join(any(User.class));
+        verify(userService, times(0)).join(any(UserDto.SignupRequest.class));
         actions.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
     }
@@ -156,7 +133,7 @@ class UserControllerTest {
         given(user.getRoles()).willReturn(Collections.singletonList("USER"));
 
         // when
-        ResultActions actions = mvc.perform(post("/signin")
+        ResultActions actions = mvc.perform(post("/auth/signin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
@@ -173,7 +150,7 @@ class UserControllerTest {
                 .build();
 
         // when
-        ResultActions actions = mvc.perform(post("/signin")
+        ResultActions actions = mvc.perform(post("/auth/signin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
@@ -195,7 +172,7 @@ class UserControllerTest {
                 .given(userService).getMatchedUser(anyString(), anyString());
 
         // when
-        ResultActions actions = mvc.perform(post("/signin")
+        ResultActions actions = mvc.perform(post("/auth/signin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
@@ -216,7 +193,7 @@ class UserControllerTest {
                 .given(userService).getMatchedUser(anyString(), anyString());
 
         // when
-        ResultActions actions = mvc.perform(post("/signin")
+        ResultActions actions = mvc.perform(post("/auth/signin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
@@ -245,7 +222,7 @@ class UserControllerTest {
         given(user.getRoles()).willReturn(Collections.singletonList("USER"));
 
         // when
-        ResultActions actions = mvc.perform(post("/oauth/facebook")
+        ResultActions actions = mvc.perform(post("/auth/facebook")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
@@ -268,7 +245,7 @@ class UserControllerTest {
                 .willThrow(JsonProcessingException.class);
 
         // when
-        ResultActions actions = mvc.perform(post("/oauth/facebook")
+        ResultActions actions = mvc.perform(post("/auth/facebook")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
@@ -288,7 +265,7 @@ class UserControllerTest {
                 .willThrow(RestClientException.class);
 
         // when
-        ResultActions actions = mvc.perform(post("/oauth/facebook")
+        ResultActions actions = mvc.perform(post("/auth/facebook")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
@@ -306,7 +283,7 @@ class UserControllerTest {
                 .willReturn("newToken");
 
         // when
-        ResultActions actions = mvc.perform(post("/token")
+        ResultActions actions = mvc.perform(post("/auth/token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(JwtTokenProvider.REFRESH_TOKEN_HEADER, refreshToken));
 
@@ -325,7 +302,7 @@ class UserControllerTest {
                 .willThrow(new ValueNotMatchException(ErrorCode.TOKEN_INVALID));
 
         // when
-        ResultActions actions = mvc.perform(post("/token")
+        ResultActions actions = mvc.perform(post("/auth/token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(JwtTokenProvider.REFRESH_TOKEN_HEADER, refreshToken));
 
