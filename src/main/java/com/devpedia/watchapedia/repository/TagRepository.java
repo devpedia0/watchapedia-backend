@@ -33,23 +33,23 @@ public class TagRepository {
         return em.find(Tag.class, id);
     }
 
-    public List<Tag> findListIn(Set<Long> set) {
+    public List<Tag> findListIn(Set<Long> ids) {
         return em.createQuery(
                 "select t " +
                         "from Tag t " +
                         "where t.id in :ids", Tag.class)
-                .setParameter("ids", set)
+                .setParameter("ids", ids)
                 .getResultList();
     }
 
-    public List<Tag> searchWithPaging(String search, int page, int size) {
+    public List<Tag> searchWithPaging(String query, int page, int size) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
-        CriteriaQuery<Tag> query = builder.createQuery(Tag.class);
-        Root<Tag> from = query.from(Tag.class);
-        CriteriaQuery<Tag> select = query.select(from);
+        CriteriaQuery<Tag> criteriaQuery = builder.createQuery(Tag.class);
+        Root<Tag> from = criteriaQuery.from(Tag.class);
+        CriteriaQuery<Tag> select = criteriaQuery.select(from);
 
-        if (!StringUtils.isBlank(search))
-            select = select.where(builder.like(from.get("description"), "%" + search + "%"));
+        if (!StringUtils.isBlank(query))
+            select = select.where(builder.like(from.get("description"), "%" + query + "%"));
 
         TypedQuery<Tag> tq = em.createQuery(select);
 

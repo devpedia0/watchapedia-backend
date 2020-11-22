@@ -32,7 +32,7 @@ public class Credential implements UserDetails {
     @Override
     public String getPassword() {
         // UserDetailsService를 구현하지 않고
-        // 즉, DB를 거치지 않을 경우 필요하지 않은 것으로 판단.
+        // DB를 거치지 않을 경우 필요하지 않은 것으로 판단.
         // 현재는 토큰에 담겨오는 정보만 이용하기 때문에 구현하지 않는다.
         return null;
     }

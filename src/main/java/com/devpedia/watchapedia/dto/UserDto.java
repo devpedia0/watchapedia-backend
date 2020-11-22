@@ -1,6 +1,7 @@
 package com.devpedia.watchapedia.dto;
 
 import com.devpedia.watchapedia.domain.enums.AccessRange;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import lombok.*;
 
 import javax.persistence.Column;
@@ -68,7 +69,10 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @JsonFilter("userInfoFilter")
     public static class UserInfo {
+
+        private Long id;
         @NotBlank
         private String name;
         @NotBlank
@@ -107,5 +111,18 @@ public class UserDto {
         private Boolean isSmsAgreed;
 
         private Boolean isPushAgreed;
+    }
+
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CollectionInsertRequest {
+        @NotBlank
+        private String title;
+        @NotBlank
+        private String description;
+
+        private List<Long> contents;
     }
 }

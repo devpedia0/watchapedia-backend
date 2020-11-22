@@ -31,14 +31,6 @@ public class ParticipantRepository {
         return em.find(Participant.class, id);
     }
 
-    public List<Participant> findAll() {
-        return em.createQuery(
-                "select p " +
-                        "from Participant p " +
-                        "join fetch p.profileImage", Participant.class)
-                .getResultList();
-    }
-
     public List<Participant> findListIn(Set<Long> set) {
         return em.createQuery(
                 "select p " +
@@ -48,14 +40,14 @@ public class ParticipantRepository {
                 .getResultList();
     }
 
-    public List<Participant> searchWithPaging(String search, int page, int size) {
+    public List<Participant> searchWithPaging(String query, int page, int size) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
-        CriteriaQuery<Participant> query = builder.createQuery(Participant.class);
-        Root<Participant> from = query.from(Participant.class);
-        CriteriaQuery<Participant> select = query.select(from);
+        CriteriaQuery<Participant> criteriaQuery = builder.createQuery(Participant.class);
+        Root<Participant> from = criteriaQuery.from(Participant.class);
+        CriteriaQuery<Participant> select = criteriaQuery.select(from);
 
-        if (!StringUtils.isBlank(search))
-            select = select.where(builder.like(from.get("name"), "%" + search + "%"));
+        if (!StringUtils.isBlank(query))
+            select = select.where(builder.like(from.get("name"), "%" + query + "%"));
 
         TypedQuery<Participant> tq = em.createQuery(select);
 

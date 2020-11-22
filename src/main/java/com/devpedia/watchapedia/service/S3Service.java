@@ -55,7 +55,7 @@ public class S3Service {
             s3Client.putObject(new PutObjectRequest(bucket, filePath, file.getInputStream(), objectMetadata)
                     .withCannedAcl(CannedAccessControlList.PublicRead));
         } catch (IOException e) {
-            throw new ExternalIOException(ErrorCode.INPUT_VALUE_INVALID, "tes image fail");
+            throw new ExternalIOException(ErrorCode.INPUT_VALUE_INVALID, "S3 image upload fail");
         }
     }
 }

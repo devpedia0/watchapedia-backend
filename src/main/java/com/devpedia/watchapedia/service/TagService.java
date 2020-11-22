@@ -32,8 +32,8 @@ public class TagService {
         tagRepository.delete(tag);
     }
 
-    public List<TagDto.TagInfo> searchWithPaging(String search, int page, int size) {
-        List<Tag> list = tagRepository.searchWithPaging(search, page, size);
+    public List<TagDto.TagInfo> searchWithPaging(String query, int page, int size) {
+        List<Tag> list = tagRepository.searchWithPaging(query, page, size);
 
         return list.stream()
                 .map(tag -> TagDto.TagInfo.builder()

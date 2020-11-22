@@ -7,9 +7,11 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,7 +27,8 @@ public class TvShowController {
                     required = true, paramType = "formData")
     })
     @PostMapping(value = "/admin/tv_shows", consumes = {MediaType.MULTIPART_MIXED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
-    public void addMovie(@RequestPart("body") TvShowDto.TvShowInsertRequest request, @RequestPart("file") MultipartFile file) {
-        contentService.saveTvShowWithImage(request, file);
+    @ResponseStatus(HttpStatus.CREATED)
+    public void addMovie(@RequestPart("body") TvShowDto.TvShowInsertRequest request, @RequestPart("poster") MultipartFile poster) {
+        contentService.saveTvShowWithImage(request, poster);
     }
 }

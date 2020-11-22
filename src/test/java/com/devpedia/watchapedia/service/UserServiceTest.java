@@ -1,11 +1,12 @@
 package com.devpedia.watchapedia.service;
 
-import com.devpedia.watchapedia.domain.User;
+import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.enums.AccessRange;
 import com.devpedia.watchapedia.dto.UserDto;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.ValueDuplicatedException;
 import com.devpedia.watchapedia.exception.ValueNotMatchException;
+import com.devpedia.watchapedia.repository.ContentRepository;
 import com.devpedia.watchapedia.repository.UserRepository;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -30,20 +35,25 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
+    private ContentRepository contentRepository;
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Test
     public void join_NotDuplicated_SaveUser() throws Exception {
         // given
-        User user = User.builder()
+        UserDto.SignupRequest request = UserDto.SignupRequest.builder()
                 .email("aaa@bb.ccc")
+                .password("1234")
+                .name("testName")
+                .countryCode("KR")
                 .build();
 
         given(userRepository.findByEmail(anyString()))
                 .willReturn(null);
 
         // when
-        userService.join(user);
+        userService.join(request);
 
         // then
         verify(userRepository, times(1)).save(any(User.class));
@@ -52,6 +62,13 @@ class UserServiceTest {
     @Test
     public void join_Duplicated_ThrowException() throws Exception {
         // given
+        UserDto.SignupRequest request = UserDto.SignupRequest.builder()
+                .email("aaa@bb.ccc")
+                .password("1234")
+                .name("testName")
+                .countryCode("KR")
+                .build();
+
         User user = User.builder()
                 .email("aaa@bb.ccc")
                 .build();
@@ -60,7 +77,7 @@ class UserServiceTest {
                 .willReturn(user);
 
         // when
-        Throwable throwable = catchThrowable(() -> userService.join(user));
+        Throwable throwable = catchThrowable(() -> userService.join(request));
 
         // then
         assertThat(throwable).isInstanceOf(ValueDuplicatedException.class);
@@ -310,5 +327,67 @@ class UserServiceTest {
         verify(user, times(1)).setSmsAgreed(anyBoolean());
         verify(user, times(1)).setEmailAgreed(anyBoolean());
         verify(user, times(1)).setPushAgreed(anyBoolean());
+    }
+
+    @Test
+    public void findAll_HasUsers_ReturnList() throws Exception {
+        // given
+        List<User> users = Arrays.asList(
+                User.builder().build(),
+                User.builder().build(),
+                User.builder().build()
+        );
+
+        given(userRepository.findAll())
+                .willReturn(users);
+
+        // when
+        List<UserDto.UserInfo> actualList = userService.getAllUserInfo();
+
+        // then
+        assertThat(actualList).hasSize(3);
+    }
+
+    @Test
+    public void findAll_HasNoUsers_ReturnEmptyList() throws Exception {
+        // given
+        given(userRepository.findAll())
+                .willReturn(new ArrayList<>());
+
+        // when
+        List<UserDto.UserInfo> actualList = userService.getAllUserInfo();
+
+        // then
+        assertThat(actualList).isNotNull().hasSize(0);
+    }
+
+    @Test
+    public void addCollection_Correct_SaveCollection() throws Exception {
+        // given
+        User user = User.builder().build();
+
+        List<Content> contents = Arrays.asList(
+                Movie.builder().build(),
+                TvShow.builder().build(),
+                Book.builder().build()
+        );
+
+        UserDto.CollectionInsertRequest request = UserDto.CollectionInsertRequest.builder()
+                .title("title")
+                .description("desc")
+                .contents(new ArrayList<>())
+                .build();
+
+        given(userRepository.findById(anyLong()))
+                .willReturn(user);
+        given(contentRepository.findListIn(any(Class.class), anySet()))
+                .willReturn(contents);
+
+        // when
+        userService.addCollection(1L, request);
+
+        // then
+        verify(userRepository, times(1)).save(any(Collection.class));
+        verify(userRepository, times(contents.size())).save(any(CollectionContent.class));
     }
 }

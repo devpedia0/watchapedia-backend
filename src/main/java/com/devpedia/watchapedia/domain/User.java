@@ -105,10 +105,4 @@ public class User extends BaseEntity {
     public void setPushAgreed(Boolean pushAgreed) {
         isPushAgreed = pushAgreed;
     }
-
-    // 연관관계 메서드
-    public void addCollection(Collection collection) {
-        this.collections.add(collection);
-        collection.setUser(this);
-    }
 }

@@ -36,6 +36,9 @@ public abstract class Content {
     @Column(nullable = false)
     private String description;
 
+    @Column(insertable = false, updatable = false)
+    private String dtype;
+
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
     private List<ContentParticipant> participants = new ArrayList<>();
 

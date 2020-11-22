@@ -1,5 +1,8 @@
 package com.devpedia.watchapedia.service;
 
+import com.devpedia.watchapedia.domain.Collection;
+import com.devpedia.watchapedia.domain.CollectionContent;
+import com.devpedia.watchapedia.domain.Content;
 import com.devpedia.watchapedia.domain.User;
 import com.devpedia.watchapedia.dto.UserDto;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
@@ -7,6 +10,7 @@ import com.devpedia.watchapedia.exception.ValueDuplicatedException;
 import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.exception.common.ErrorField;
+import com.devpedia.watchapedia.repository.ContentRepository;
 import com.devpedia.watchapedia.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -14,7 +18,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -22,11 +29,19 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final ContentRepository contentRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public void join(User user) {
-        if (isDuplicated(user.getEmail())) throw new ValueDuplicatedException(ErrorCode.USER_DUPLICATED,
-                ErrorField.of("email", user.getEmail(), ""));
+    public void join(UserDto.SignupRequest request) {
+        if (isDuplicated(request.getEmail())) throw new ValueDuplicatedException(ErrorCode.USER_DUPLICATED,
+                ErrorField.of("email", request.getEmail(), ""));
+
+        User user = User.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .name(request.getName())
+                .countryCode(request.getCountryCode())
+                .build();
 
         userRepository.save(user);
     }
@@ -86,23 +101,47 @@ public class UserService {
 
         if (userInfo.getName() != null && !StringUtils.isBlank(userInfo.getName()))
             user.setName(userInfo.getName());
+        if (userInfo.getDescription() != null) user.setDescription(userInfo.getDescription());
+        if (userInfo.getCountryCode() != null) user.setCountryCode(userInfo.getCountryCode());
+        if (userInfo.getAccessRange() != null) user.setAccessRange(userInfo.getAccessRange());
+        if (userInfo.getIsEmailAgreed() != null) user.setEmailAgreed(userInfo.getIsEmailAgreed());
+        if (userInfo.getIsPushAgreed() != null) user.setPushAgreed(userInfo.getIsPushAgreed());
+        if (userInfo.getIsSmsAgreed() != null) user.setSmsAgreed(userInfo.getIsPushAgreed());
+    }
 
-        if (userInfo.getDescription() != null)
-            user.setDescription(userInfo.getDescription());
+    public void addCollection(Long userId, UserDto.CollectionInsertRequest request) {
+        User user = userRepository.findById(userId);
 
-        if (userInfo.getCountryCode() != null)
-            user.setCountryCode(userInfo.getCountryCode());
+        if (user == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
 
-        if (userInfo.getAccessRange() != null)
-            user.setAccessRange(userInfo.getAccessRange());
+        Collection collection = Collection.builder()
+                .user(user)
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .build();
 
-        if (userInfo.getIsEmailAgreed() != null)
-            user.setEmailAgreed(userInfo.getIsEmailAgreed());
+        userRepository.save(collection);
 
-        if (userInfo.getIsPushAgreed() != null)
-            user.setPushAgreed(userInfo.getIsPushAgreed());
+        List<Content> contents = contentRepository.findListIn(Content.class, new HashSet<>(request.getContents()));
 
-        if (userInfo.getIsSmsAgreed() != null)
-            user.setSmsAgreed(userInfo.getIsPushAgreed());
+        for (Content content : contents) {
+            CollectionContent collectionContent = CollectionContent.builder()
+                    .collection(collection)
+                    .content(content)
+                    .build();
+            userRepository.save(collectionContent);
+        }
+    }
+
+    public List<UserDto.UserInfo> getAllUserInfo() {
+        List<User> list = userRepository.findAll();
+        return list.stream()
+                .map(user -> UserDto.UserInfo.builder()
+                        .id(user.getId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .roles(user.getRoles())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

@@ -29,8 +29,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         web
                 .ignoring()
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
-                .antMatchers("/signup", "/signin", "/oauth/facebook", "/token", "/users/email")
-                .antMatchers("/participants", "/tags");
+                .antMatchers("/auth/**")
+                .antMatchers("/public/**");
     }
 
     @Override
@@ -45,7 +45,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .authorizeRequests()
                     .antMatchers("/admin/**").hasAuthority("ADMIN")
-                    .antMatchers("/**/me/**").authenticated()
+                    .anyRequest().authenticated()
                 .and()
                 .exceptionHandling()
                     .authenticationEntryPoint(new SecurityEntryPoint())

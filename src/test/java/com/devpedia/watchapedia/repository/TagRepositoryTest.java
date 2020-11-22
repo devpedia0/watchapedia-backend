@@ -47,29 +47,29 @@ class TagRepositoryTest {
     @Test
     public void findListIn_Correct_ReturnList() throws Exception {
         // given
-        Tag tag1 = Tag.builder()
+        Tag expected1 = Tag.builder()
                 .description("tag1")
                 .build();
 
-        Tag tag2 = Tag.builder()
+        Tag expected2 = Tag.builder()
                 .description("tag2")
                 .build();
 
-        Tag tag3 = Tag.builder()
+        Tag expected3 = Tag.builder()
                 .description("tag3")
                 .build();
 
-        em.persist(tag1);
-        em.persist(tag2);
-        em.persist(tag3);
+        em.persist(expected1);
+        em.persist(expected2);
+        em.persist(expected3);
 
-        Set<Long> ids = new HashSet<>(Arrays.asList(tag1.getId(), tag2.getId(), tag3.getId()));
+        Set<Long> ids = new HashSet<>(Arrays.asList(expected1.getId(), expected2.getId(), expected3.getId()));
 
         // when
-        List<Tag> list = tagRepository.findListIn(ids);
+        List<Tag> actualList = tagRepository.findListIn(ids);
 
         // then
-        assertThat(list).hasSize(3);
+        assertThat(actualList).hasSize(3);
     }
 
     @Test
@@ -78,61 +78,61 @@ class TagRepositoryTest {
         Set<Long> ids = null;
 
         // when
-        List<Tag> list = tagRepository.findListIn(ids);
+        List<Tag> actualList = tagRepository.findListIn(ids);
 
         // then
-        assertThat(list).isNotNull().hasSize(0);
+        assertThat(actualList).isNotNull().hasSize(0);
     }
 
     @Test
     public void searchWithPaging_WithQuery_PagingQueriedList() throws Exception {
         // given
-        Tag tag1 = Tag.builder()
+        Tag expected1 = Tag.builder()
                 .description("aaatag1")
                 .build();
 
-        Tag tag2 = Tag.builder()
+        Tag expected2 = Tag.builder()
                 .description("bbbtag2")
                 .build();
 
-        Tag tag3 = Tag.builder()
+        Tag expected3 = Tag.builder()
                 .description("aabtag3")
                 .build();
 
-        em.persist(tag1);
-        em.persist(tag2);
-        em.persist(tag3);
+        em.persist(expected1);
+        em.persist(expected2);
+        em.persist(expected3);
 
         // when
-        List<Tag> list = tagRepository.searchWithPaging("aa", 1, 5);
+        List<Tag> actualList = tagRepository.searchWithPaging("aa", 1, 5);
 
         // then
-        assertThat(list).hasSize(2);
+        assertThat(actualList).hasSize(2);
     }
 
     @Test
     public void searchWithPaging_WithoutQuery_PagingOnlyList() throws Exception {
         // given
-        Tag tag1 = Tag.builder()
+        Tag expected1 = Tag.builder()
                 .description("tag1")
                 .build();
 
-        Tag tag2 = Tag.builder()
+        Tag expected2 = Tag.builder()
                 .description("tag2")
                 .build();
 
-        Tag tag3 = Tag.builder()
+        Tag expected3 = Tag.builder()
                 .description("tag3")
                 .build();
 
-        em.persist(tag1);
-        em.persist(tag2);
-        em.persist(tag3);
+        em.persist(expected1);
+        em.persist(expected2);
+        em.persist(expected3);
 
         // when
-        List<Tag> list = tagRepository.searchWithPaging("", 1, 5);
+        List<Tag> actualList = tagRepository.searchWithPaging("", 1, 5);
 
         // then
-        assertThat(list).hasSize(3);
+        assertThat(actualList).hasSize(3);
     }
 }
