@@ -84,6 +84,32 @@ class UserServiceTest {
     }
 
     @Test
+    public void join_DeletedUser_ThrowException() throws Exception {
+        // given
+        UserDto.SignupRequest request = UserDto.SignupRequest.builder()
+                .email("aaa@bb.ccc")
+                .password("1234")
+                .name("testName")
+                .countryCode("KR")
+                .build();
+
+        User user = User.builder()
+                .email("aaa@bb.ccc")
+                .build();
+
+        user.delete();
+
+        given(userRepository.findByEmail(anyString()))
+                .willReturn(user);
+
+        // when
+        Throwable throwable = catchThrowable(() -> userService.join(request));
+
+        // then
+        assertThat(throwable).isInstanceOf(ValueDuplicatedException.class);
+    }
+
+    @Test
     public void joinOAuth_NotDuplicated_CreateAndSaveUser() throws Exception {
         // given
         given(userRepository.findByEmail(anyString()))
@@ -111,6 +137,25 @@ class UserServiceTest {
 
         // then
         verify(userRepository, times(0)).save(any(User.class));
+    }
+
+    @Test
+    public void joinOAuth_DeletedUser_ThrowException() throws Exception {
+        // given
+        User user = User.builder()
+                .email("aaa@bb.ccc")
+                .build();
+
+        user.delete();
+
+        given(userRepository.findByEmail(anyString()))
+                .willReturn(user);
+
+        // when
+        Throwable throwable = catchThrowable(() -> userService.joinOAuthIfNotExist("aaa@bb.ccc", "testName"));
+
+        // then
+        assertThat(throwable).isInstanceOf(ValueDuplicatedException.class);
     }
 
     @Test
@@ -342,7 +387,7 @@ class UserServiceTest {
                 .willReturn(users);
 
         // when
-        List<UserDto.UserInfo> actualList = userService.getAllUserInfo();
+        List<UserDto.UserInfoMinimum> actualList = userService.getAllUserInfo();
 
         // then
         assertThat(actualList).hasSize(3);
@@ -355,7 +400,7 @@ class UserServiceTest {
                 .willReturn(new ArrayList<>());
 
         // when
-        List<UserDto.UserInfo> actualList = userService.getAllUserInfo();
+        List<UserDto.UserInfoMinimum> actualList = userService.getAllUserInfo();
 
         // then
         assertThat(actualList).isNotNull().hasSize(0);
@@ -389,5 +434,35 @@ class UserServiceTest {
         // then
         verify(userRepository, times(1)).save(any(Collection.class));
         verify(userRepository, times(contents.size())).save(any(CollectionContent.class));
+    }
+
+    @Test
+    public void delete_UserExist_Delete() throws Exception {
+        // given
+        User user = User.builder().build();
+
+        given(userRepository.findById(anyLong()))
+                .willReturn(user);
+
+        // when
+        userService.delete(1L);
+
+        // then
+        assertThat(user.getIsDeleted()).isTrue();
+    }
+
+    @Test
+    public void delete_UserNotExist_ThrowException() throws Exception {
+        // given
+        User user = null;
+
+        given(userRepository.findById(anyLong()))
+                .willReturn(user);
+
+        // when
+        Throwable throwable = catchThrowable(() -> userService.delete(1L));
+
+        // then
+        assertThat(throwable).isInstanceOf(EntityNotExistException.class);
     }
 }

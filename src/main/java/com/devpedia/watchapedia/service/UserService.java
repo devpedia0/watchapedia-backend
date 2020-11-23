@@ -33,8 +33,14 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public void join(UserDto.SignupRequest request) {
-        if (isDuplicated(request.getEmail())) throw new ValueDuplicatedException(ErrorCode.USER_DUPLICATED,
-                ErrorField.of("email", request.getEmail(), ""));
+        User existUser = userRepository.findByEmail(request.getEmail());
+
+        if (existUser != null) {
+            if (existUser.getIsDeleted())
+                throw new ValueDuplicatedException(ErrorCode.USER_ON_DELETE, ErrorField.of("email", request.getEmail(), ""));
+
+            throw new ValueDuplicatedException(ErrorCode.USER_DUPLICATED, ErrorField.of("email", request.getEmail(), ""));
+        }
 
         User user = User.builder()
                 .email(request.getEmail())
@@ -47,7 +53,15 @@ public class UserService {
     }
 
     public void joinOAuthIfNotExist(String email, String name) {
-        if (isDuplicated(email)) return;
+        User existUser = userRepository.findByEmail(email);
+
+        if (existUser != null) {
+            if (existUser.getIsDeleted())
+                throw new ValueDuplicatedException(ErrorCode.USER_ON_DELETE, ErrorField.of("email", email, ""));
+
+            return;
+        }
+
         User user = User.builder()
                 .email(email)
                 .password(UUID.randomUUID().toString())
@@ -57,16 +71,8 @@ public class UserService {
         userRepository.save(user);
     }
 
-    private boolean isDuplicated(String email) {
-        User user = userRepository.findByEmail(email);
-        return user != null;
-    }
-
     public User getMatchedUser(String email, String password) {
-        User user = userRepository.findByEmail(email);
-
-        if (user == null)
-            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        User user = getUserIfExistOrThrow(email);
         if (!passwordEncoder.matches(password, user.getPassword()))
             throw new ValueNotMatchException(ErrorCode.PASSWORD_NOT_MATCH);
 
@@ -75,13 +81,17 @@ public class UserService {
 
     public UserDto.EmailCheckResult isExistEmail(String email) {
         return UserDto.EmailCheckResult.builder()
-                .isExist(isDuplicated(email))
+                .isExist(isExistUser(email))
                 .build();
     }
 
+    private boolean isExistUser(String email) {
+        User user = userRepository.findByEmail(email);
+        return user != null;
+    }
+
     public UserDto.UserInfo getUserInfo(Long id) {
-        User user = userRepository.findById(id);
-        if (user == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        User user = getUserIfExistOrThrow(id);
         return UserDto.UserInfo.builder()
                 .name(user.getName())
                 .email(user.getEmail())
@@ -96,8 +106,7 @@ public class UserService {
     }
 
     public void editUserInfo(Long id, UserDto.UserInfoEditRequest userInfo) {
-        User user = userRepository.findById(id);
-        if (user == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        User user = getUserIfExistOrThrow(id);
 
         if (userInfo.getName() != null && !StringUtils.isBlank(userInfo.getName()))
             user.setName(userInfo.getName());
@@ -110,9 +119,7 @@ public class UserService {
     }
 
     public void addCollection(Long userId, UserDto.CollectionInsertRequest request) {
-        User user = userRepository.findById(userId);
-
-        if (user == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        User user = getUserIfExistOrThrow(userId);
 
         Collection collection = Collection.builder()
                 .user(user)
@@ -133,15 +140,34 @@ public class UserService {
         }
     }
 
-    public List<UserDto.UserInfo> getAllUserInfo() {
+    public List<UserDto.UserInfoMinimum> getAllUserInfo() {
         List<User> list = userRepository.findAll();
         return list.stream()
-                .map(user -> UserDto.UserInfo.builder()
+                .map(user -> UserDto.UserInfoMinimum.builder()
                         .id(user.getId())
                         .name(user.getName())
                         .email(user.getEmail())
                         .roles(user.getRoles())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    public void delete(Long id) {
+        User user = getUserIfExistOrThrow(id);
+        user.delete();
+    }
+
+    private User getUserIfExistOrThrow(Long id) {
+        User user = userRepository.findById(id);
+        if (user == null || user.getIsDeleted())
+            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        return user;
+    }
+
+    private User getUserIfExistOrThrow(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null || user.getIsDeleted())
+            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        return user;
     }
 }

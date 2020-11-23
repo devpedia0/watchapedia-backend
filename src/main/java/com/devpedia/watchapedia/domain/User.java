@@ -21,7 +21,6 @@ import java.util.List;
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Where(clause = "delete_yn = 'N'")
 public class User extends BaseEntity {
 
     @Id @GeneratedValue
@@ -76,6 +75,10 @@ public class User extends BaseEntity {
         this.isSmsAgreed = false;
         this.isPushAgreed = false;
         this.isDeleted = false;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
     }
 
     public void setName(String name) {
