@@ -33,6 +33,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.security.Principal;
 import java.util.List;
@@ -54,7 +55,7 @@ public class UserController {
 
     @ApiResponses({
             @ApiResponse(code = 201, message = "회원가입 완료"),
-            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C002: 이미 등록된 유저")
+            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C002: 이미 등록된 유저 \t\n C006: 삭제 유예중인 유저")
     })
     @PostMapping("/auth/signup")
     @ResponseStatus(HttpStatus.CREATED)
@@ -67,7 +68,7 @@ public class UserController {
                     @ResponseHeader(name = JwtTokenProvider.ACCESS_TOKEN_HEADER, description = "엑세스 토큰", response = String.class),
                     @ResponseHeader(name = JwtTokenProvider.REFRESH_TOKEN_HEADER, description = "리프레쉬 토큰", response = String.class)
             }),
-            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C002: 등록 안된 유저 \t\n C004: 비밀번호 불일치")
+            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 등록 안된 유저 \t\n C004: 비밀번호 불일치, \t\n C006: 삭제 유예중인 유저")
     })
     @PostMapping("/auth/signin")
     public ResponseEntity<Void> signin(@RequestBody @Valid UserDto.SigninRequest request) {
@@ -129,7 +130,7 @@ public class UserController {
     })
     @PostMapping("/auth/token")
     public ResponseEntity<Void> refreshAccessToken(
-            @RequestHeader(name = JwtTokenProvider.REFRESH_TOKEN_HEADER) String refreshToken) {
+            @RequestHeader(name = JwtTokenProvider.REFRESH_TOKEN_HEADER) @NotBlank String refreshToken) {
 
         String accessToken = redisService.getAccessTokenOrThrow(refreshToken);
 
@@ -143,34 +144,44 @@ public class UserController {
         return userService.isExistEmail(email);
     }
 
+    @ApiResponses({
+            @ApiResponse(code = 400, message = "C003: 존재하지 않는 유저")
+    })
     @GetMapping("/users/me")
     public UserDto.UserInfo getMyUserInfo(Principal principal) {
         Long id = Long.valueOf(principal.getName());
         return userService.getUserInfo(id);
     }
 
+    @ApiResponses({
+            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 존재하지 않는 유저")
+    })
     @PutMapping("/users/me")
     public void editSettings(@RequestBody @Valid UserDto.UserInfoEditRequest request, Principal principal) {
         Long id = Long.valueOf(principal.getName());
         userService.editUserInfo(id, request);
     }
 
+    @ApiResponses({
+            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 존재하지 않는 유저")
+    })
+    @DeleteMapping("/users/me")
+    public void deleteUser(Principal principal) {
+        Long id = Long.valueOf(principal.getName());
+        userService.delete(id);
+    }
+
+    @GetMapping("/admin/users")
+    public List<UserDto.UserInfoMinimum> getUserInfos() {
+        return userService.getAllUserInfo();
+    }
+
+    @ApiResponses({
+            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 존재하지 않는 유저")
+    })
     @PostMapping("/admin/users/{id}/collections")
     public void addCollection(@PathVariable("id") Long userId,
                               @RequestBody @Valid UserDto.CollectionInsertRequest request) {
         userService.addCollection(userId, request);
-    }
-
-    @GetMapping("/admin/users")
-    public MappingJacksonValue getUserInfos() {
-        List<UserDto.UserInfo> users = userService.getAllUserInfo();
-
-        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "email", "roles");
-        FilterProvider provider = new SimpleFilterProvider().addFilter("userInfoFilter", filter);
-
-        MappingJacksonValue mappingJacksonValue = new MappingJacksonValue(users);
-        mappingJacksonValue.setFilters(provider);
-
-        return mappingJacksonValue;
     }
 }

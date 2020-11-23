@@ -69,10 +69,7 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @JsonFilter("userInfoFilter")
     public static class UserInfo {
-
-        private Long id;
         @NotBlank
         private String name;
         @NotBlank
@@ -90,6 +87,20 @@ public class UserDto {
         @NotNull
         private Boolean isPushAgreed;
         @NotNull
+        private List<String> roles;
+    }
+
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserInfoMinimum {
+        private Long id;
+
+        private String name;
+
+        private String email;
+
         private List<String> roles;
     }
 

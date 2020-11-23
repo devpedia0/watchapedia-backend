@@ -120,6 +120,29 @@ class UserControllerTest {
     }
 
     @Test
+    public void signup_DeletedUser_Status400AndC006() throws Exception {
+        // given
+        UserDto.SignupRequest request = UserDto.SignupRequest.builder()
+                .email("aaa@bb.ccc")
+                .password("1234")
+                .name("testName")
+                .countryCode("KR")
+                .build();
+
+        willThrow(new ValueDuplicatedException(ErrorCode.USER_ON_DELETE))
+                .given(userService).join(any(UserDto.SignupRequest.class));
+
+        // when
+        ResultActions actions = mvc.perform(post("/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+        // then
+        actions.andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C006"));
+    }
+
+    @Test
     public void signin_Correct_Status200AndTokens() throws Exception {
         // given
         UserDto.SigninRequest request = UserDto.SigninRequest.builder()
@@ -200,6 +223,27 @@ class UserControllerTest {
         // then
         actions.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C004"));
+    }
+
+    @Test
+    public void signin_DeletedUser_Status400AndC006() throws Exception {
+        // given
+        UserDto.SigninRequest request = UserDto.SigninRequest.builder()
+                .email("aaa@bb.ccc")
+                .password("1234")
+                .build();
+
+        willThrow(new ValueNotMatchException(ErrorCode.USER_ON_DELETE))
+                .given(userService).getMatchedUser(anyString(), anyString());
+
+        // when
+        ResultActions actions = mvc.perform(post("/auth/signin")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+        // then
+        actions.andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C006"));
     }
 
     @Test
@@ -291,6 +335,21 @@ class UserControllerTest {
         actions.andExpect(status().isOk())
                 .andExpect(header().exists(JwtTokenProvider.ACCESS_TOKEN_HEADER))
                 .andExpect(header().doesNotExist(JwtTokenProvider.REFRESH_TOKEN_HEADER));
+    }
+
+    @Test
+    public void refreshToken_EmptyRefreshToken_Status400AndC001() throws Exception {
+        // given
+        String refreshToken = "";
+
+        // when
+        ResultActions actions = mvc.perform(post("/auth/token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(JwtTokenProvider.REFRESH_TOKEN_HEADER, refreshToken));
+
+        // then
+        actions.andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
     }
 
     @Test
