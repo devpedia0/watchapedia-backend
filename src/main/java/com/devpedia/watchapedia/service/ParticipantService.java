@@ -34,6 +34,7 @@ public class ParticipantService {
 
         Participant participant = Participant.builder()
                 .name(request.getName())
+                .job(request.getJob())
                 .description(request.getDescription())
                 .profileImage(profileImage)
                 .build();
@@ -48,6 +49,7 @@ public class ParticipantService {
                 .map(participant -> ParticipantDto.ParticipantInfo.builder()
                         .id(participant.getId())
                         .name(participant.getName())
+                        .job(participant.getJob())
                         .description(participant.getDescription())
                         .profileImagePath(
                                 participant.getProfileImage() != null
@@ -59,7 +61,7 @@ public class ParticipantService {
     public void update(Long participantId, ParticipantDto.ParticipantUpdateRequest request) {
         Participant participant = participantRepository.findById(participantId);
         if (participant == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
-        participant.updateInfo(request.getName(), request.getDescription());
+        participant.updateInfo(request.getName(), request.getJob(), request.getDescription());
     }
 
     public void delete(Long id) {

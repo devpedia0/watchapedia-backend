@@ -49,16 +49,19 @@ class ParticipantRepositoryTest {
         // given
         Participant expected1 = Participant.builder()
                 .name("p1")
+                .job("j1")
                 .description("desc1")
                 .build();
 
         Participant expected2 = Participant.builder()
                 .name("p2")
+                .job("j2")
                 .description("desc2")
                 .build();
 
         Participant expected3 = Participant.builder()
                 .name("p3")
+                .job("j3")
                 .description("desc3")
                 .build();
 
@@ -92,16 +95,19 @@ class ParticipantRepositoryTest {
         // given
         Participant expected1 = Participant.builder()
                 .name("aaa")
+                .job("j1")
                 .description("desc1")
                 .build();
 
         Participant expected2 = Participant.builder()
                 .name("bbb")
+                .job("j2")
                 .description("desc2")
                 .build();
 
         Participant expected3 = Participant.builder()
                 .name("aab")
+                .job("j3")
                 .description("desc2")
                 .build();
 
@@ -121,16 +127,19 @@ class ParticipantRepositoryTest {
         // given
         Participant expected1 = Participant.builder()
                 .name("aaa")
+                .job("j1")
                 .description("desc1")
                 .build();
 
         Participant expected2 = Participant.builder()
                 .name("bbb")
+                .job("j2")
                 .description("desc2")
                 .build();
 
         Participant expected3 = Participant.builder()
                 .name("aab")
+                .job("j3")
                 .description("desc2")
                 .build();
 
