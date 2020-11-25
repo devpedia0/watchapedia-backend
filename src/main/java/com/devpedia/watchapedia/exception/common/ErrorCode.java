@@ -19,7 +19,8 @@ public enum ErrorCode {
     ENTITY_NOT_FOUND(BAD_REQUEST, "C003", "해당 엔티티가 존재하지 않습니다"),
     PASSWORD_NOT_MATCH(BAD_REQUEST, "C004", "비밀번호가 일치하지 않습니다"),
     TOKEN_INVALID(UNAUTHORIZED, "C005", "유효하지 않은 토큰입니다"),
-    USER_ON_DELETE(BAD_REQUEST, "C006", "삭제 유예기간인 회원입니다");
+    USER_ON_DELETE(BAD_REQUEST, "C006", "삭제 유예기간인 회원입니다"),
+    IMAGE_FORMAT_INVALID(BAD_REQUEST, "C007", "올바르지 않은 이미지 파일입니다");
 
     private final HttpStatus status;
     private final String code;

@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -64,7 +65,10 @@ class ContentServiceTest {
                 .tags(Collections.singletonList(1L))
                 .build();
 
-        MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
+        MultipartFile poster = new MockMultipartFile("poster.jpg", "poster.jpg", "image/jpg", new byte[100]);
+        List<MultipartFile> gallery = Collections.singletonList(
+                new MockMultipartFile("gallery.jpg", "gallery.jpg", "image/jpg", new byte[100])
+        );
 
         given(participantRepository.findListIn(anySet()))
                 .willReturn(Collections.singletonList(participant));
@@ -74,10 +78,11 @@ class ContentServiceTest {
         given(tag.getId()).willReturn(1L);
 
         // when
-        contentService.saveBookWithImage(request, file);
+        contentService.saveBookWithImage(request, poster, gallery);
 
         // then
         verify(contentRepository, times(1)).save(any(Book.class));
+        verify(s3Service, times(2)).upload(any(MultipartFile.class), anyString());
     }
 
     @Test
@@ -96,13 +101,17 @@ class ContentServiceTest {
                 .tags(null)
                 .build();
 
-        MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
+        MultipartFile poster = new MockMultipartFile("poster.jpg", "poster.jpg", "image/jpg", new byte[100]);
+        List<MultipartFile> gallery = Collections.singletonList(
+                new MockMultipartFile("gallery.jpg", "gallery.jpg", "image/jpg", new byte[100])
+        );
 
         // when
-        contentService.saveBookWithImage(request, file);
+        contentService.saveBookWithImage(request, poster, gallery);
 
         // then
         verify(contentRepository, times(1)).save(any(Book.class));
+        verify(s3Service, times(2)).upload(any(MultipartFile.class), anyString());
     }
 
     @Test
@@ -133,7 +142,10 @@ class ContentServiceTest {
                 .tags(Collections.singletonList(1L))
                 .build();
 
-        MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
+        MultipartFile poster = new MockMultipartFile("poster.jpg", "poster.jpg", "image/jpg", new byte[100]);
+        List<MultipartFile> gallery = Collections.singletonList(
+                new MockMultipartFile("gallery.jpg", "gallery.jpg", "image/jpg", new byte[100])
+        );
 
         given(participantRepository.findListIn(anySet()))
                 .willReturn(Collections.singletonList(participant));
@@ -143,10 +155,11 @@ class ContentServiceTest {
         given(tag.getId()).willReturn(1L);
 
         // when
-        contentService.saveMovieWithImage(request, file);
+        contentService.saveMovieWithImage(request, poster, gallery);
 
         // then
         verify(contentRepository, times(1)).save(any(Movie.class));
+        verify(s3Service, times(2)).upload(any(MultipartFile.class), anyString());
     }
 
     @Test
@@ -168,13 +181,17 @@ class ContentServiceTest {
                 .tags(null)
                 .build();
 
-        MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
+        MultipartFile poster = new MockMultipartFile("poster.jpg", "poster.jpg", "image/jpg", new byte[100]);
+        List<MultipartFile> gallery = Collections.singletonList(
+                new MockMultipartFile("gallery.jpg", "gallery.jpg", "image/jpg", new byte[100])
+        );
 
         // when
-        contentService.saveMovieWithImage(request, file);
+        contentService.saveMovieWithImage(request, poster, gallery);
 
         // then
         verify(contentRepository, times(1)).save(any(Movie.class));
+        verify(s3Service, times(2)).upload(any(MultipartFile.class), anyString());
     }
 
     @Test
@@ -202,7 +219,10 @@ class ContentServiceTest {
                 .tags(Collections.singletonList(1L))
                 .build();
 
-        MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
+        MultipartFile poster = new MockMultipartFile("poster.jpg", "poster.jpg", "image/jpg", new byte[100]);
+        List<MultipartFile> gallery = Collections.singletonList(
+                new MockMultipartFile("gallery.jpg", "gallery.jpg", "image/jpg", new byte[100])
+        );
 
         given(participantRepository.findListIn(anySet()))
                 .willReturn(Collections.singletonList(participant));
@@ -212,10 +232,11 @@ class ContentServiceTest {
         given(tag.getId()).willReturn(1L);
 
         // when
-        contentService.saveTvShowWithImage(request, file);
+        contentService.saveTvShowWithImage(request, poster, gallery);
 
         // then
         verify(contentRepository, times(1)).save(any(TvShow.class));
+        verify(s3Service, times(2)).upload(any(MultipartFile.class), anyString());
     }
 
     @Test
@@ -234,12 +255,16 @@ class ContentServiceTest {
                 .tags(null)
                 .build();
 
-        MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
+        MultipartFile poster = new MockMultipartFile("poster.jpg", "poster.jpg", "image/jpg", new byte[100]);
+        List<MultipartFile> gallery = Collections.singletonList(
+                new MockMultipartFile("gallery.jpg", "gallery.jpg", "image/jpg", new byte[100])
+        );
 
         // when
-        contentService.saveTvShowWithImage(request, file);
+        contentService.saveTvShowWithImage(request, poster, gallery);
 
         // then
         verify(contentRepository, times(1)).save(any(TvShow.class));
+        verify(s3Service, times(2)).upload(any(MultipartFile.class), anyString());
     }
 }
