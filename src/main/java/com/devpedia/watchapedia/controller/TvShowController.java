@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -23,12 +25,13 @@ public class TvShowController {
     private final ContentService contentService;
 
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "body", value = "Request 객체 json을 body에 담 Content-Type을 application/json로 해야함",
-                    required = true, paramType = "formData")
+            @ApiImplicitParam(name = "body", value = "Models -> TvShowInsertRequest 참조", required = true)
     })
     @PostMapping(value = "/admin/tv_shows", consumes = {MediaType.MULTIPART_MIXED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    public void addMovie(@RequestPart("body") TvShowDto.TvShowInsertRequest request, @RequestPart("poster") MultipartFile poster) {
-        contentService.saveTvShowWithImage(request, poster);
+    public void addMovie(@RequestPart("body") TvShowDto.TvShowInsertRequest request,
+                         @RequestPart("poster") MultipartFile poster,
+                         @RequestPart(value = "gallery", required = false) List<MultipartFile> gallery) {
+        contentService.saveTvShowWithImage(request, poster, gallery);
     }
 }

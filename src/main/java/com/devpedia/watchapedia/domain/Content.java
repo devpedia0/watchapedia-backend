@@ -76,6 +76,15 @@ public abstract class Content {
         this.addContentTag(ct);
     }
 
+    public void addImage(Image image) {
+        if (image == null) return;
+        ContentImage ci = ContentImage.builder()
+                .content(this)
+                .image(image)
+                .build();
+        this.addContentImage(ci);
+    }
+
     // 연관관계 메서드
     public void addContentParticipant(ContentParticipant contentParticipant) {
         this.participants.add(contentParticipant);

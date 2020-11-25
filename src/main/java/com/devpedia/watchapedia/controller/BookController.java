@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -22,13 +24,14 @@ public class BookController {
     private final ContentService contentService;
 
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "body", value = "Request 객체 json을 body에 담 Content-Type을 application/json로 해야함",
-                    required = true, paramType = "formData")
+            @ApiImplicitParam(name = "body", value = "Models -> BookInsertRequest 참조", required = true)
     })
     @PostMapping(value = "/admin/books", consumes = {MediaType.MULTIPART_MIXED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    public void addBook(@RequestPart("body") BookDto.BookInsertRequest request, @RequestPart("poster") MultipartFile poster) {
-        contentService.saveBookWithImage(request, poster);
+    public void addBook(@RequestPart("body") BookDto.BookInsertRequest request,
+                        @RequestPart("poster") MultipartFile poster,
+                        @RequestPart(value = "gallery", required = false) List<MultipartFile> gallery) {
+        contentService.saveBookWithImage(request, poster, gallery);
     }
 
 }

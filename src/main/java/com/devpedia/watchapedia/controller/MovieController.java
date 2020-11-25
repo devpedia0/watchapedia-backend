@@ -11,6 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -19,12 +21,13 @@ public class MovieController {
     private final ContentService contentService;
 
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "body", value = "Request 객체 json을 body에 담 Content-Type을 application/json로 해야함",
-                    required = true, paramType = "formData")
+            @ApiImplicitParam(name = "body", value = "Models -> MovieInsertRequest 참조", required = true)
     })
     @PostMapping(value = "/admin/movies", consumes = {MediaType.MULTIPART_MIXED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    public void addMovie(@RequestPart("body") MovieDto.MovieInsertRequest request, @RequestPart("poster") MultipartFile poster) {
-        contentService.saveMovieWithImage(request, poster);
+    public void addMovie(@RequestPart("body") MovieDto.MovieInsertRequest request,
+                         @RequestPart("poster") MultipartFile poster,
+                         @RequestPart(value = "gallery", required = false) List<MultipartFile> gallery) {
+        contentService.saveMovieWithImage(request, poster, gallery);
     }
 }

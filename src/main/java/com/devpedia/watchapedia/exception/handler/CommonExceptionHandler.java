@@ -5,10 +5,12 @@ import com.devpedia.watchapedia.exception.common.ErrorResponse;
 import io.jsonwebtoken.JwtException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import javax.validation.ConstraintViolationException;
 
@@ -36,6 +38,18 @@ public class CommonExceptionHandler {
     @ExceptionHandler(MissingRequestHeaderException.class)
     protected ResponseEntity<ErrorResponse> handleBindException(MissingRequestHeaderException e) {
         ErrorResponse response = ErrorResponse.of(ErrorCode.INPUT_VALUE_INVALID, e.getMessage());
+        return new ResponseEntity<>(response, response.getStatus());
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    protected ResponseEntity<ErrorResponse> handleBindException(MissingServletRequestPartException e) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.INPUT_VALUE_INVALID, e.getMessage());
+        return new ResponseEntity<>(response, response.getStatus());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    protected ResponseEntity<ErrorResponse> handleBindException(HttpMessageNotReadableException e) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.INPUT_VALUE_INVALID);
         return new ResponseEntity<>(response, response.getStatus());
     }
 }
