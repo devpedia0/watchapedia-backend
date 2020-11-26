@@ -28,7 +28,7 @@ public class ParticipantService {
         Image profileImage = null;
 
         if (profile != null && !profile.isEmpty()) {
-            profileImage = Image.of(profile, ImageCategory.POSTER);
+            profileImage = Image.of(profile, ImageCategory.PARTICIPANT_PROFILE);
             s3Service.upload(profile, profileImage.getPath());
         }
 
