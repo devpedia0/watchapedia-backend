@@ -68,6 +68,7 @@ public class UserService {
                 .name(name)
                 .countryCode("KR")
                 .build();
+
         userRepository.save(user);
     }
 
@@ -92,17 +93,7 @@ public class UserService {
 
     public UserDto.UserInfo getUserInfo(Long id) {
         User user = getUserIfExistOrThrow(id);
-        return UserDto.UserInfo.builder()
-                .name(user.getName())
-                .email(user.getEmail())
-                .countryCode(user.getCountryCode())
-                .description(user.getDescription())
-                .isEmailAgreed(user.getIsEmailAgreed())
-                .isPushAgreed(user.getIsPushAgreed())
-                .isSmsAgreed(user.getIsSmsAgreed())
-                .accessRange(user.getAccessRange())
-                .roles(user.getRoles())
-                .build();
+        return new UserDto.UserInfo(user);
     }
 
     public void editUserInfo(Long id, UserDto.UserInfoEditRequest userInfo) {
@@ -143,12 +134,7 @@ public class UserService {
     public List<UserDto.UserInfoMinimum> getAllUserInfo() {
         List<User> list = userRepository.findAll();
         return list.stream()
-                .map(user -> UserDto.UserInfoMinimum.builder()
-                        .id(user.getId())
-                        .name(user.getName())
-                        .email(user.getEmail())
-                        .roles(user.getRoles())
-                        .build())
+                .map(UserDto.UserInfoMinimum::new)
                 .collect(Collectors.toList());
     }
 

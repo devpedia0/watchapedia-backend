@@ -56,6 +56,10 @@ public abstract class Content {
         this.description = description;
     }
 
+    public void setPosterImage(Image posterImage) {
+        this.posterImage = posterImage;
+    }
+
     public void addParticipant(Participant participant, String role, String characterName) {
         if (participant == null || role == null || characterName == null) return;
         ContentParticipant cp = ContentParticipant.builder()

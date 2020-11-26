@@ -1,5 +1,7 @@
 package com.devpedia.watchapedia.dto;
 
+import com.devpedia.watchapedia.domain.Image;
+import com.devpedia.watchapedia.domain.Movie;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
@@ -41,5 +43,22 @@ public class MovieDto {
         private List<ParticipantDto.ParticipantRole> roles;
 
         private List<Long> tags;
+
+        public Movie toEntity() {
+            return Movie.builder()
+                    .posterImage(null)
+                    .mainTitle(this.mainTitle)
+                    .category(this.category)
+                    .description(this.description)
+                    .productionDate(this.productionDate)
+                    .countryCode(this.countryCode)
+                    .originTitle(this.originTitle)
+                    .runningTimeInMinutes(this.runningTimeInMinutes)
+                    .bookRate(this.bookRate)
+                    .totalAudience(this.totalAudience)
+                    .isNetflixContent(this.isNetflixContent)
+                    .isWatchaContent(this.isWatchaContent)
+                    .build();
+        }
     }
 }
