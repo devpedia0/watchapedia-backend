@@ -14,6 +14,8 @@ public class ParticipantDto {
     public static class ParticipantInsertRequest {
         @NotBlank
         private String name;
+        @NotBlank
+        private String job;
 
         private String description;
     }
@@ -25,6 +27,7 @@ public class ParticipantDto {
     @Builder
     public static class ParticipantUpdateRequest {
         private String name;
+        private String job;
         private String description;
     }
 
@@ -52,6 +55,8 @@ public class ParticipantDto {
         private Long id;
         @NotBlank
         private String name;
+        @NotBlank
+        private String job;
 
         private String description;
 
