@@ -46,6 +46,7 @@ public class ContentService {
     private void createContent(Content content, MultipartFile poster, ContentDto.ContentChildren children) {
         addPosterImage(content, poster);
         addChildren(content, children.getRoles(), children.getTags(), children.getGallery());
+        contentRepository.save(content);
     }
 
     private void addPosterImage(Content content, MultipartFile poster) {
