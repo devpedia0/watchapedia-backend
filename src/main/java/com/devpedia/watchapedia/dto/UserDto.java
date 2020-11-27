@@ -1,5 +1,6 @@
 package com.devpedia.watchapedia.dto;
 
+import com.devpedia.watchapedia.domain.User;
 import com.devpedia.watchapedia.domain.enums.AccessRange;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import lombok.*;
@@ -88,6 +89,18 @@ public class UserDto {
         private Boolean isPushAgreed;
         @NotNull
         private List<String> roles;
+
+        public UserInfo(User user) {
+            this.name = user.getName();
+            this.email = user.getEmail();
+            this.countryCode = user.getCountryCode();
+            this.description = user.getDescription();
+            this.isEmailAgreed = user.getIsEmailAgreed();
+            this.isSmsAgreed = user.getIsSmsAgreed();
+            this.isPushAgreed = user.getIsPushAgreed();
+            this.accessRange = user.getAccessRange();
+            this.roles = user.getRoles();
+        }
     }
 
     @Getter @Setter
@@ -102,6 +115,13 @@ public class UserDto {
         private String email;
 
         private List<String> roles;
+
+        public UserInfoMinimum(User user) {
+            this.id = user.getId();
+            this.name = user.getName();
+            this.email = user.getEmail();
+            this.roles = user.getRoles();
+        }
     }
 
     @Getter @Setter

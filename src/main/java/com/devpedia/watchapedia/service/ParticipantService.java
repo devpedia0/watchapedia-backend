@@ -32,12 +32,7 @@ public class ParticipantService {
             s3Service.upload(profile, profileImage.getPath());
         }
 
-        Participant participant = Participant.builder()
-                .name(request.getName())
-                .job(request.getJob())
-                .description(request.getDescription())
-                .profileImage(profileImage)
-                .build();
+        Participant participant = request.toEntity(profileImage);
 
         participantRepository.save(participant);
     }
@@ -46,15 +41,7 @@ public class ParticipantService {
         List<Participant> list = participantRepository.searchWithPaging(query, page, size);
 
         return list.stream()
-                .map(participant -> ParticipantDto.ParticipantInfo.builder()
-                        .id(participant.getId())
-                        .name(participant.getName())
-                        .job(participant.getJob())
-                        .description(participant.getDescription())
-                        .profileImagePath(
-                                participant.getProfileImage() != null
-                                        ? UrlUtil.getCloudFrontUrl(participant.getProfileImage().getPath()) : null)
-                        .build())
+                .map(ParticipantDto.ParticipantInfo::new)
                 .collect(Collectors.toList());
     }
 

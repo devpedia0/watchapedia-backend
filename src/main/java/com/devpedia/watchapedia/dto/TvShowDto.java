@@ -1,5 +1,7 @@
 package com.devpedia.watchapedia.dto;
 
+import com.devpedia.watchapedia.domain.Image;
+import com.devpedia.watchapedia.domain.TvShow;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
@@ -34,5 +36,19 @@ public class TvShowDto {
         private List<ParticipantDto.ParticipantRole> roles;
 
         private List<Long> tags;
+
+        public TvShow toEntity() {
+            return TvShow.builder()
+                    .posterImage(null)
+                    .mainTitle(this.mainTitle)
+                    .category(this.category)
+                    .description(this.description)
+                    .productionDate(this.productionDate)
+                    .countryCode(this.countryCode)
+                    .originTitle(this.originTitle)
+                    .isNetflixContent(this.isNetflixContent)
+                    .isWatchaContent(this.isWatchaContent)
+                    .build();
+        }
     }
 }

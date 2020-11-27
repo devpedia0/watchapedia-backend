@@ -1,5 +1,8 @@
 package com.devpedia.watchapedia.dto;
 
+import com.devpedia.watchapedia.domain.Image;
+import com.devpedia.watchapedia.domain.Participant;
+import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
@@ -18,6 +21,15 @@ public class ParticipantDto {
         private String job;
 
         private String description;
+
+        public Participant toEntity(Image profileImage) {
+            return Participant.builder()
+                    .profileImage(profileImage)
+                    .name(this.name)
+                    .job(this.job)
+                    .description(this.description)
+                    .build();
+        }
     }
 
     @Getter
@@ -61,6 +73,15 @@ public class ParticipantDto {
         private String description;
 
         private String profileImagePath;
+
+        public ParticipantInfo(Participant participant) {
+            this.id = participant.getId();
+            this.name = participant.getName();
+            this.job = participant.getJob();
+            this.description = participant.getDescription();
+            this.profileImagePath = participant.getProfileImage() != null
+                    ? UrlUtil.getCloudFrontUrl(participant.getProfileImage().getPath()) : null;
+        }
     }
 
 

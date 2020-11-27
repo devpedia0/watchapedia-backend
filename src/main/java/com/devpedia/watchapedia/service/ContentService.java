@@ -6,7 +6,6 @@ import com.devpedia.watchapedia.dto.*;
 import com.devpedia.watchapedia.exception.InvalidFileException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.repository.*;
-import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,78 +29,39 @@ public class ContentService {
     private final TagRepository tagRepository;
 
     public void saveBookWithImage(BookDto.BookInsertRequest request, MultipartFile poster, List<MultipartFile> gallery) {
-        if (isInvalidImageFile(poster))
-            throw new InvalidFileException(ErrorCode.IMAGE_FORMAT_INVALID, "포스터 이미지 파일이 올바르지 않습니다");
-
-        Image posterImage = Image.of(poster, ImageCategory.POSTER);
-        s3Service.upload(poster, posterImage.getPath());
-
-        Book book = Book.builder()
-                .posterImage(posterImage)
-                .mainTitle(request.getMainTitle())
-                .subtitle(request.getSubtitle())
-                .category(request.getCategory())
-                .descrption(request.getDescription())
-                .productionDate(request.getProductionDate())
-                .page(request.getPage())
-                .elaboration(request.getElaboration())
-                .contents(request.getContents())
-                .build();
-
-        addChildren(book, request.getRoles(), request.getTags(), gallery);
-
-        contentRepository.save(book);
+        Book book = request.toEntity();
+        createContent(book, poster, new ContentDto.ContentChildren(request.getRoles(), request.getTags(), gallery));
     }
 
     public void saveMovieWithImage(MovieDto.MovieInsertRequest request, MultipartFile poster, List<MultipartFile> gallery) {
-        if (isInvalidImageFile(poster))
-            throw new InvalidFileException(ErrorCode.IMAGE_FORMAT_INVALID, "포스터 이미지 파일이 올바르지 않습니다");
-
-        Image posterImage = Image.of(poster, ImageCategory.POSTER);
-        s3Service.upload(poster, posterImage.getPath());
-
-        Movie movie = Movie.builder()
-                .posterImage(posterImage)
-                .mainTitle(request.getMainTitle())
-                .category(request.getCategory())
-                .description(request.getDescription())
-                .productionDate(request.getProductionDate())
-                .countryCode(request.getCountryCode())
-                .originTitle(request.getOriginTitle())
-                .runningTimeInMinutes(request.getRunningTimeInMinutes())
-                .bookRate(request.getBookRate())
-                .totalAudience(request.getTotalAudience())
-                .isNetflixContent(request.getIsNetflixContent())
-                .isWatchaContent(request.getIsWatchaContent())
-                .build();
-
-        addChildren(movie, request.getRoles(), request.getTags(), gallery);
-
-        contentRepository.save(movie);
+        Movie movie = request.toEntity();
+        createContent(movie, poster, new ContentDto.ContentChildren(request.getRoles(), request.getTags(), gallery));
     }
 
     public void saveTvShowWithImage(TvShowDto.TvShowInsertRequest request, MultipartFile poster, List<MultipartFile> gallery) {
+        TvShow tvShow = request.toEntity();
+        createContent(tvShow, poster, new ContentDto.ContentChildren(request.getRoles(), request.getTags(), gallery));
+    }
+
+    private void createContent(Content content, MultipartFile poster, ContentDto.ContentChildren children) {
+        addPosterImage(content, poster);
+        addChildren(content, children.getRoles(), children.getTags(), children.getGallery());
+        contentRepository.save(content);
+    }
+
+    private void addPosterImage(Content content, MultipartFile poster) {
+        Image posterImage = createPosterImage(poster);
+        content.setPosterImage(posterImage);
+    }
+
+    private Image createPosterImage(MultipartFile poster) {
         if (isInvalidImageFile(poster))
             throw new InvalidFileException(ErrorCode.IMAGE_FORMAT_INVALID, "포스터 이미지 파일이 올바르지 않습니다");
 
         Image posterImage = Image.of(poster, ImageCategory.POSTER);
         s3Service.upload(poster, posterImage.getPath());
 
-        TvShow tvShow = TvShow.builder()
-                .posterImage(posterImage)
-                .mainTitle(request.getMainTitle())
-                .category(request.getCategory())
-                .description(request.getDescription())
-                .productionDate(request.getProductionDate())
-                .countryCode(request.getCountryCode())
-                .originTitle(request.getOriginTitle())
-                .isNetflixContent(request.getIsNetflixContent())
-                .isWatchaContent(request.getIsWatchaContent())
-                .build();
-
-        addChildren(tvShow, request.getRoles(), request.getTags(), gallery);
-
-        contentRepository.save(tvShow);
+        return posterImage;
     }
 
     private void addChildren(Content content, List<ParticipantDto.ParticipantRole> roles, List<Long> tags, List<MultipartFile> gallery) {
@@ -155,13 +115,7 @@ public class ContentService {
         List<Content> list = contentRepository.searchWithPaging(Content.class, query, page, size);
 
         return list.stream()
-                .map(content -> ContentDto.CommonContentInfo.builder()
-                        .id(content.getId())
-                        .contentType(content.getDtype())
-                        .mainTitle(content.getMainTitle())
-                        .productionDate(content.getProductionDate())
-                        .posterImagePath(UrlUtil.getCloudFrontUrl(content.getPosterImage().getPath()))
-                        .build())
+                .map(ContentDto.CommonContentInfo::new)
                 .collect(Collectors.toList());
     }
 }

@@ -36,10 +36,7 @@ public class TagService {
         List<Tag> list = tagRepository.searchWithPaging(query, page, size);
 
         return list.stream()
-                .map(tag -> TagDto.TagInfo.builder()
-                        .id(tag.getId())
-                        .description(tag.getDescription())
-                        .build())
+                .map(TagDto.TagInfo::new)
                 .collect(Collectors.toList());
     }
 }
