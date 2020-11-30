@@ -22,14 +22,16 @@ public class Book extends Content {
     @Column(nullable = false)
     private Integer page;
 
+    @Column(columnDefinition = "TEXT")
     private String contents;
 
+    @Column(columnDefinition = "TEXT")
     private String elaboration;
 
     @Builder
-    public Book(Image posterImage, String mainTitle, String category, LocalDate productionDate, String descrption,
+    public Book(Image posterImage, String mainTitle, String category, LocalDate productionDate, String description,
                 String subtitle, Integer page, String contents, String elaboration) {
-        super(posterImage, mainTitle, category, productionDate, descrption);
+        super(posterImage, mainTitle, category, productionDate, description);
         this.subtitle = subtitle;
         this.page = page;
         this.contents = contents;

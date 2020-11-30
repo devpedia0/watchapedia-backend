@@ -42,7 +42,7 @@ public class BookDto {
                     .mainTitle(this.mainTitle)
                     .subtitle(this.subtitle)
                     .category(this.category)
-                    .descrption(this.description)
+                    .description(this.description)
                     .productionDate(this.productionDate)
                     .page(this.page)
                     .elaboration(this.elaboration)

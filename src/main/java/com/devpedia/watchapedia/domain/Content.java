@@ -20,7 +20,7 @@ public abstract class Content {
     @Column(name = "content_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "image_id")
     private Image posterImage;
 
@@ -33,7 +33,7 @@ public abstract class Content {
     @Column(nullable = false)
     private LocalDate productionDate;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @Column(insertable = false, updatable = false)

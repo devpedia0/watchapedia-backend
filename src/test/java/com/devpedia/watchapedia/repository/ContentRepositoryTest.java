@@ -217,7 +217,7 @@ class ContentRepositoryTest {
                 .mainTitle("book")
                 .subtitle("sub")
                 .category("romance")
-                .descrption("desc")
+                .description("desc")
                 .productionDate(LocalDate.of(2020, 1, 20))
                 .page(2000)
                 .elaboration("el")

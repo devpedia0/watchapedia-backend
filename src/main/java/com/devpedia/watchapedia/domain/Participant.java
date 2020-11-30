@@ -29,6 +29,7 @@ public class Participant {
     @Column(nullable = false)
     private String job;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @OneToMany(mappedBy = "participant", cascade = CascadeType.ALL)

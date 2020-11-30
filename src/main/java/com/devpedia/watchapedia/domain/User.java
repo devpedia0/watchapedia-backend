@@ -36,6 +36,7 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private String password;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(nullable = false)

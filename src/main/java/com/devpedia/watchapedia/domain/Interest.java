@@ -27,13 +27,13 @@ public class Interest {
 
     @Convert(converter = InterestStateConverter.class)
     @Column(nullable = false)
-    private InterestState score;
+    private InterestState state;
 
-    public Interest(User user, Content content, InterestState score) {
+    public Interest(User user, Content content, InterestState state) {
         this.id = new InterestId(user.getId(), content.getId());
         this.user = user;
         this.content = content;
-        this.score = score;
+        this.state = state;
     }
 
     @Embeddable
