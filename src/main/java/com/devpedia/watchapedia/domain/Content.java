@@ -20,7 +20,7 @@ public abstract class Content {
     @Column(name = "content_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "image_id")
     private Image posterImage;
 
