@@ -10,7 +10,8 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Ranking {
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "chart_rank", "chart_type", "chart_id" }))
+public class Ranking{
     @Id @GeneratedValue
     @Column(name = "ranking_id")
     private Long id;
@@ -22,7 +23,7 @@ public class Ranking {
     private Long chart_rank;
 
     /**
-     * 영화: M, TV 프로그램: T,  책: B
+     * 영화: M, TV 프로그램: T, 책: B
      */
     @Column(nullable = false)
     private String chart_type;
@@ -36,15 +37,12 @@ public class Ranking {
     /**
      * 콘텐츠 리스트
      */
-    @OneToMany(mappedBy = "ranking", fetch = FetchType.LAZY)
-    private List<Content> rankingContentList = new ArrayList<>();
+    private Content content;
 
-    public Ranking(Long chart_rank, String chart_type, String chart_id, List<Content> rankingContentList){
+    public Ranking(Long chart_rank, String chart_type, String chart_id, Content content){
         this.chart_rank = chart_rank;
         this.chart_type = chart_type;
         this.chart_id = chart_id;
-        this.rankingContentList = rankingContentList;
+        this.content = content;
     }
-
-
 }
