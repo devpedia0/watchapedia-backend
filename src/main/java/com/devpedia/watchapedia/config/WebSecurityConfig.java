@@ -38,7 +38,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .ignoring()
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
                 .antMatchers("/auth/**")
-                .antMatchers("/public/**");
+                .antMatchers("/public/**")
+                .antMatchers("/api/home/**");
+
+
     }
 
     @Override

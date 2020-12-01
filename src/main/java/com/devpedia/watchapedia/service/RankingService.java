@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -18,10 +19,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RankingService {
     private final RankingRepository rankingRepository;
-    private final ContentRepository contentRepository;
-    public List<RankingDto.RankingContentInfo> searchWithRanking() {
-        List<RankingDto.RankingContentInfo> res = new ArrayList<>();
-        return res;
+    public List<RankingDto.RankingContentInfo> searchWithRanking(String chart_type, String chart_id) {
+        List<Ranking> rankingList = rankingRepository.findChartId(chart_type, chart_id);
+        return rankingList.stream()
+                .map(RankingDto.RankingContentInfo::new)
+                .collect(Collectors.toList());
     }
 
 }

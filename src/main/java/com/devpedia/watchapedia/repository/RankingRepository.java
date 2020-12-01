@@ -13,9 +13,11 @@ import java.util.List;
 public class RankingRepository {
     private final EntityManager em;
 
-    public List<Ranking> getRankingList(){
-        List<Ranking> res = new ArrayList<>();
-        return res;
+    public List<Ranking> findChartId(String chart_type, String chart_id){
+        List<Ranking> rankings = em.createQuery("select r from Ranking r where chart_id = :chart_id and chart_type = :chart_type", Ranking.class)
+                .setParameter("chart_id",chart_id)
+                .setParameter("chart_type", chart_type)
+                .getResultList();
+        return rankings;
     }
-
 }

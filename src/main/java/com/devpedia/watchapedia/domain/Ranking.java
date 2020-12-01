@@ -23,7 +23,7 @@ public class Ranking{
     private Long chart_rank;
 
     /**
-     * 영화: M, TV 프로그램: T, 책: B
+     * 영화: movies, TV 프로그램: tvshows, 책: books
      */
     @Column(nullable = false)
     private String chart_type;
