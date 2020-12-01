@@ -30,7 +30,7 @@ public class Collection extends BaseEntity {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "delete_yn", nullable = false)

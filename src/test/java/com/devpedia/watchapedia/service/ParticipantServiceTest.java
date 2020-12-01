@@ -49,7 +49,7 @@ class ParticipantServiceTest {
         participantService.addWithImage(request, file);
 
         // then
-        verify(s3Service, times(1)).upload(any(), anyString());
+        verify(s3Service, times(1)).upload(any(MultipartFile.class), anyString());
         verify(participantRepository, times(1)).save(any(Participant.class));
     }
 
@@ -67,7 +67,7 @@ class ParticipantServiceTest {
         participantService.addWithImage(request, file);
 
         // then
-        verify(s3Service, times(0)).upload(any(), anyString());
+        verify(s3Service, times(0)).upload(any(MultipartFile.class), anyString());
         verify(participantRepository, times(1)).save(any(Participant.class));
     }
 

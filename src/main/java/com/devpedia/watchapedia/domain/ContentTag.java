@@ -15,7 +15,7 @@ public class ContentTag {
 
     @MapsId("tagId")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "image_id")
+    @JoinColumn(name = "tag_id")
     private Tag tag;
 
     @MapsId("contentId")

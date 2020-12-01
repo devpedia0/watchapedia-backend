@@ -33,7 +33,7 @@ public abstract class Content {
     @Column(nullable = false)
     private LocalDate productionDate;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @Column(insertable = false, updatable = false)
