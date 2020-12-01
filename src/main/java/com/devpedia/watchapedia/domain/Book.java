@@ -29,9 +29,9 @@ public class Book extends Content {
     private String elaboration;
 
     @Builder
-    public Book(Ranking ranking,Image posterImage, String mainTitle, String category, LocalDate productionDate, String description,
+    public Book(Image posterImage, String mainTitle, String category, LocalDate productionDate, String description,
                 String subtitle, Integer page, String contents, String elaboration) {
-        super(ranking, posterImage, mainTitle, category, productionDate, description);
+        super(posterImage, mainTitle, category, productionDate, description);
         this.subtitle = subtitle;
         this.page = page;
         this.contents = contents;

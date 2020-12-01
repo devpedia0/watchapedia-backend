@@ -24,10 +24,6 @@ public abstract class Content {
     @JoinColumn(name = "image_id")
     private Image posterImage;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "ranking_id")
-    private Ranking ranking;
-
     @Column(nullable = false)
     private String mainTitle;
 
@@ -52,8 +48,7 @@ public abstract class Content {
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
     private List<ContentTag> tags = new ArrayList<>();
 
-    public Content(Ranking ranking, Image posterImage, String mainTitle, String category, LocalDate productionDate, String description) {
-        this.ranking = ranking;
+    public Content(Image posterImage, String mainTitle, String category, LocalDate productionDate, String description) {
         this.posterImage = posterImage;
         this.mainTitle = mainTitle;
         this.category = category;
