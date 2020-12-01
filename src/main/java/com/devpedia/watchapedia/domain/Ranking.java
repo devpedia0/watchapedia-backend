@@ -37,6 +37,8 @@ public class Ranking{
     /**
      * 콘텐츠 리스트
      */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "content_id")
     private Content content;
 
     public Ranking(Long chart_rank, String chart_type, String chart_id, Content content){
