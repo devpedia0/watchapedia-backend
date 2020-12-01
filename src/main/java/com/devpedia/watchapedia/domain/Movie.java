@@ -36,10 +36,10 @@ public class Movie extends Content {
     private Long totalAudience;
 
     @Builder
-    public Movie(Image posterImage, String mainTitle, String category, LocalDate productionDate, String description,
+    public Movie(Ranking ranking,Image posterImage, String mainTitle, String category, LocalDate productionDate, String description,
                  String originTitle, String countryCode, Integer runningTimeInMinutes, Boolean isWatchaContent,
                  Boolean isNetflixContent, Double bookRate, Long totalAudience) {
-        super(posterImage, mainTitle, category, productionDate, description);
+        super(ranking, posterImage, mainTitle, category, productionDate, description);
         this.originTitle = originTitle;
         this.countryCode = countryCode;
         this.runningTimeInMinutes = runningTimeInMinutes;

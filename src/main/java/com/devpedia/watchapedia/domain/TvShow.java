@@ -27,9 +27,9 @@ public class TvShow extends Content {
     private Boolean isNetflixContent;
 
     @Builder
-    public TvShow(Image posterImage, String mainTitle, String category, LocalDate productionDate, String description,
+    public TvShow(Ranking ranking,Image posterImage, String mainTitle, String category, LocalDate productionDate, String description,
                   String originTitle, String countryCode, Boolean isWatchaContent, Boolean isNetflixContent) {
-        super(posterImage, mainTitle, category, productionDate, description);
+        super(ranking, posterImage, mainTitle, category, productionDate, description);
         this.originTitle = originTitle;
         this.countryCode = countryCode;
         this.isWatchaContent = isWatchaContent;
