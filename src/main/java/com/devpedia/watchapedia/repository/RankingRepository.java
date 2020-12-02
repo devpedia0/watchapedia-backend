@@ -38,7 +38,8 @@ public class RankingRepository {
         String jpqlQuery = "select r " +
                 "from Ranking r " +
                 "where chart_id = :chartId " +
-                "and chart_type = :chartType";
+                "and chart_type = :chartType " +
+                "order by chart_rank";
         List<Ranking> rankings = em.createQuery(jpqlQuery
                 , Ranking.class)
                 .setParameter("chartId",chartId)
@@ -56,8 +57,8 @@ public class RankingRepository {
     public List<Ranking> findByChartAllId(String chartType){
         String jpqlQuery = "select r " +
                 "from Ranking r " +
-                "where chart_type = :chartType";
-
+                "where chart_type = :chartType " +
+                "order by chart_rank";
         List<Ranking> rankings = em.createQuery(jpqlQuery, Ranking.class)
                 .setParameter("chartType", chartType)
                 .getResultList();
