@@ -107,27 +107,6 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class UserInfoMinimum {
-        private Long id;
-
-        private String name;
-
-        private String email;
-
-        private List<String> roles;
-
-        public UserInfoMinimum(User user) {
-            this.id = user.getId();
-            this.name = user.getName();
-            this.email = user.getEmail();
-            this.roles = user.getRoles();
-        }
-    }
-
-    @Getter @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
     public static class UserInfoEditRequest {
         private String name;
 
@@ -148,12 +127,18 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class CollectionInsertRequest {
-        @NotBlank
-        private String title;
-        @NotBlank
-        private String description;
+    public static class UserRatingAndWishContent {
+        private RatingAndWishCount movie;
+        private RatingAndWishCount book;
+        private RatingAndWishCount tvShow;
+    }
 
-        private List<Long> contents;
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RatingAndWishCount {
+        private Integer ratingCount;
+        private Integer wishCount;
     }
 }
