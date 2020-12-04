@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
@@ -37,6 +38,12 @@ public class CommonExceptionHandler {
 
     @ExceptionHandler(MissingRequestHeaderException.class)
     protected ResponseEntity<ErrorResponse> handleBindException(MissingRequestHeaderException e) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.INPUT_VALUE_INVALID, e.getMessage());
+        return new ResponseEntity<>(response, response.getStatus());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    protected ResponseEntity<ErrorResponse> handleBindException(MissingServletRequestParameterException e) {
         ErrorResponse response = ErrorResponse.of(ErrorCode.INPUT_VALUE_INVALID, e.getMessage());
         return new ResponseEntity<>(response, response.getStatus());
     }
