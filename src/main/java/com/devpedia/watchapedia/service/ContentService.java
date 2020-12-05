@@ -259,6 +259,7 @@ public class ContentService {
             items.add(new ContentDto.AwardItem(collection, contentsInCollection));
         }
         ContentDto.ListForAward awardList = ContentDto.ListForAward.builder()
+                .type(LIST_TYPE_AWARD)
                 .title("왓챠피디아 컬렉션")
                 .list(items)
                 .build();
