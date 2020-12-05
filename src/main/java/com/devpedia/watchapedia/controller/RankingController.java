@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -20,24 +21,24 @@ public class RankingController {
 
     /**
      * 랭킹 차트 아이디 데이터 개별 조회
-     * @param chartType
-     * @param chartId
-     * @return
+     * @param chartType 차트 타입(영화,티비쇼,책)
+     * @param chartId 차트 아이디(박스오피스,넷플릭스,왓챠)
+     * @return 랭킹 차트 DTO 리스트 반환
      */
-    @GetMapping("/public/{chartType}/rankings")
-    public List<ContentDto.CommonContentRankingInfo> getRankingList(@PathVariable("chartType") String chartType
+    @GetMapping("/public/ranking/{chartType}")
+    public List<RankingDto.RankingContentInfoList> getRankingList(@PathVariable("chartType") String chartType
             , @RequestParam("chartId") String chartId){
         return rankingService.searchWithRanking(chartType, chartId);
     }
 
     /**
      * 랭킹 차트 타입별 모든 데이터 조회
-     * @param chartType
-     * @return
+     * @param chartType 차트 타입(영화,티비쇼,책)
+     * @return 랭킹 차트 DTO 리스트 반환
      */
-    @GetMapping("/public/{chartType}/rankings/contents")
-    public HashMap<String,List<ContentDto.CommonContentRankingInfo>> getRankingAllList(@PathVariable("chartType") String chartType){
+    @GetMapping("/public/rankings/{chartType}")
+    public List<RankingDto.RankingContentInfoList> getRankingAllList(@PathVariable("chartType") String chartType){
         return rankingService.searchWithAllRanking(chartType);
-
     }
+
 }
