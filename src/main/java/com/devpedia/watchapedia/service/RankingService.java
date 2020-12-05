@@ -45,7 +45,7 @@ public class RankingService {
     /**
      * 랭킹 리스트 DTO 변환 함수
      * @param rankings
-    * @return 랭킹 DTO 리스트 반환
+     * @return 랭킹 DTO 리스트 반환
      */
 
     private List<RankingDto.RankingContentInfoList> setRankingList(List<Ranking> rankings) {
