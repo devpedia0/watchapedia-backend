@@ -13,9 +13,6 @@ import com.devpedia.watchapedia.util.UrlUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import io.swagger.annotations.ResponseHeader;
@@ -25,18 +22,16 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.json.MappingJacksonValue;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.security.Principal;
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -148,7 +143,7 @@ public class UserController {
             @ApiResponse(code = 400, message = "C003: 존재하지 않는 유저")
     })
     @GetMapping("/users/me")
-    public UserDto.UserInfo getMyUserInfo(Principal principal) {
+    public UserDto.UserInfo getMyUserInfo(@ApiIgnore Principal principal) {
         Long id = Long.valueOf(principal.getName());
         return userService.getUserInfo(id);
     }
@@ -157,7 +152,8 @@ public class UserController {
             @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 존재하지 않는 유저")
     })
     @PutMapping("/users/me")
-    public void editSettings(@RequestBody @Valid UserDto.UserInfoEditRequest request, Principal principal) {
+    public void editSettings(@RequestBody @Valid UserDto.UserInfoEditRequest request,
+                             @ApiIgnore Principal principal) {
         Long id = Long.valueOf(principal.getName());
         userService.editUserInfo(id, request);
     }
@@ -166,22 +162,20 @@ public class UserController {
             @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 존재하지 않는 유저")
     })
     @DeleteMapping("/users/me")
-    public void deleteUser(Principal principal) {
+    public void deleteUser(@ApiIgnore Principal principal) {
         Long id = Long.valueOf(principal.getName());
         userService.delete(id);
     }
 
-    @GetMapping("/admin/users")
-    public List<UserDto.UserInfoMinimum> getUserInfos() {
-        return userService.getAllUserInfo();
-    }
-
-    @ApiResponses({
-            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 존재하지 않는 유저")
-    })
-    @PostMapping("/admin/users/{id}/collections")
-    public void addCollection(@PathVariable("id") Long userId,
-                              @RequestBody @Valid UserDto.CollectionInsertRequest request) {
-        userService.addCollection(userId, request);
+    /**
+     * 토큰에 담겨온 유저의 각 매체별(영화, 책, TV)
+     * 평점 평가 개수와 보고싶어요 누른 개수를 반환한다.
+     * @param principal 유저 토큰 정보
+     * @return 평가 개수 & 보고싶어요 개수
+     */
+    @GetMapping("/users/me/ratings")
+    public UserDto.UserRatingAndWishContent getRatingInfo(@ApiIgnore Principal principal){
+        Long id = Long.valueOf(principal.getName());
+        return userService.getRatingInfo(id);
     }
 }
