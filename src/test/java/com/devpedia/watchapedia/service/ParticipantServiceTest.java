@@ -40,6 +40,7 @@ class ParticipantServiceTest {
         // given
         ParticipantDto.ParticipantInsertRequest request = ParticipantDto.ParticipantInsertRequest.builder()
                 .name("name")
+                .job("job")
                 .description("desc")
                 .build();
         MultipartFile file = new MockMultipartFile("image.jpg", new byte[100]);
@@ -48,7 +49,7 @@ class ParticipantServiceTest {
         participantService.addWithImage(request, file);
 
         // then
-        verify(s3Service, times(1)).upload(any(), anyString());
+        verify(s3Service, times(1)).upload(any(MultipartFile.class), anyString());
         verify(participantRepository, times(1)).save(any(Participant.class));
     }
 
@@ -57,6 +58,7 @@ class ParticipantServiceTest {
         // given
         ParticipantDto.ParticipantInsertRequest request = ParticipantDto.ParticipantInsertRequest.builder()
                 .name("name")
+                .job("job")
                 .description("desc")
                 .build();
         MultipartFile file = null;
@@ -65,7 +67,7 @@ class ParticipantServiceTest {
         participantService.addWithImage(request, file);
 
         // then
-        verify(s3Service, times(0)).upload(any(), anyString());
+        verify(s3Service, times(0)).upload(any(MultipartFile.class), anyString());
         verify(participantRepository, times(1)).save(any(Participant.class));
     }
 
@@ -74,6 +76,7 @@ class ParticipantServiceTest {
         // given
         Participant participant = Participant.builder()
                 .name("name")
+                .job("job")
                 .description("desc")
                 .profileImage(null)
                 .build();
@@ -92,11 +95,13 @@ class ParticipantServiceTest {
         // given
         ParticipantDto.ParticipantUpdateRequest request = ParticipantDto.ParticipantUpdateRequest.builder()
                 .name("modName")
+                .job("modJob")
                 .description("modDesc")
                 .build();
 
         Participant participant = Participant.builder()
                 .name("name")
+                .job("job")
                 .description("desc")
                 .profileImage(null)
                 .build();
@@ -117,6 +122,7 @@ class ParticipantServiceTest {
         // given
         ParticipantDto.ParticipantUpdateRequest request = ParticipantDto.ParticipantUpdateRequest.builder()
                 .name("modName")
+                .job("modJob")
                 .description("modDesc")
                 .build();
 
@@ -135,6 +141,7 @@ class ParticipantServiceTest {
         // given
         Participant participant = Participant.builder()
                 .name("name")
+                .job("job")
                 .description("desc")
                 .profileImage(null)
                 .build();

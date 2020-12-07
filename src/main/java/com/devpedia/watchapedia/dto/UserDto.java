@@ -1,5 +1,6 @@
 package com.devpedia.watchapedia.dto;
 
+import com.devpedia.watchapedia.domain.User;
 import com.devpedia.watchapedia.domain.enums.AccessRange;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import lombok.*;
@@ -88,20 +89,18 @@ public class UserDto {
         private Boolean isPushAgreed;
         @NotNull
         private List<String> roles;
-    }
 
-    @Getter @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class UserInfoMinimum {
-        private Long id;
-
-        private String name;
-
-        private String email;
-
-        private List<String> roles;
+        public UserInfo(User user) {
+            this.name = user.getName();
+            this.email = user.getEmail();
+            this.countryCode = user.getCountryCode();
+            this.description = user.getDescription();
+            this.isEmailAgreed = user.getIsEmailAgreed();
+            this.isSmsAgreed = user.getIsSmsAgreed();
+            this.isPushAgreed = user.getIsPushAgreed();
+            this.accessRange = user.getAccessRange();
+            this.roles = user.getRoles();
+        }
     }
 
     @Getter @Setter
@@ -128,12 +127,18 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class CollectionInsertRequest {
-        @NotBlank
-        private String title;
-        @NotBlank
-        private String description;
+    public static class UserRatingAndWishContent {
+        private RatingAndWishCount movie;
+        private RatingAndWishCount book;
+        private RatingAndWishCount tvShow;
+    }
 
-        private List<Long> contents;
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RatingAndWishCount {
+        private Integer ratingCount;
+        private Integer wishCount;
     }
 }

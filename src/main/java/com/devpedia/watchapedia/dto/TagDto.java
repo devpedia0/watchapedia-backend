@@ -1,5 +1,6 @@
 package com.devpedia.watchapedia.dto;
 
+import com.devpedia.watchapedia.domain.Tag;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
@@ -25,5 +26,10 @@ public class TagDto {
         private Long id;
         @NotBlank
         private String description;
+
+        public TagInfo(Tag tag) {
+            this.id = tag.getId();
+            this.description = tag.getDescription();
+        }
     }
 }

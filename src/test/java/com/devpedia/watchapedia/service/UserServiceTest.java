@@ -375,68 +375,6 @@ class UserServiceTest {
     }
 
     @Test
-    public void findAll_HasUsers_ReturnList() throws Exception {
-        // given
-        List<User> users = Arrays.asList(
-                User.builder().build(),
-                User.builder().build(),
-                User.builder().build()
-        );
-
-        given(userRepository.findAll())
-                .willReturn(users);
-
-        // when
-        List<UserDto.UserInfoMinimum> actualList = userService.getAllUserInfo();
-
-        // then
-        assertThat(actualList).hasSize(3);
-    }
-
-    @Test
-    public void findAll_HasNoUsers_ReturnEmptyList() throws Exception {
-        // given
-        given(userRepository.findAll())
-                .willReturn(new ArrayList<>());
-
-        // when
-        List<UserDto.UserInfoMinimum> actualList = userService.getAllUserInfo();
-
-        // then
-        assertThat(actualList).isNotNull().hasSize(0);
-    }
-
-    @Test
-    public void addCollection_Correct_SaveCollection() throws Exception {
-        // given
-        User user = User.builder().build();
-
-        List<Content> contents = Arrays.asList(
-                Movie.builder().build(),
-                TvShow.builder().build(),
-                Book.builder().build()
-        );
-
-        UserDto.CollectionInsertRequest request = UserDto.CollectionInsertRequest.builder()
-                .title("title")
-                .description("desc")
-                .contents(new ArrayList<>())
-                .build();
-
-        given(userRepository.findById(anyLong()))
-                .willReturn(user);
-        given(contentRepository.findListIn(any(Class.class), anySet()))
-                .willReturn(contents);
-
-        // when
-        userService.addCollection(1L, request);
-
-        // then
-        verify(userRepository, times(1)).save(any(Collection.class));
-        verify(userRepository, times(contents.size())).save(any(CollectionContent.class));
-    }
-
-    @Test
     public void delete_UserExist_Delete() throws Exception {
         // given
         User user = User.builder().build();

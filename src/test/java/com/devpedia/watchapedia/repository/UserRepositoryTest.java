@@ -160,32 +160,4 @@ class UserRepositoryTest {
         //then
         assertThat(actualUser).isNull();
     }
-
-    @Test
-    public void findAll_Correct_ReturnList() throws Exception {
-        //given
-        User expectedUser1 = User.builder()
-                .email("aaa@bb.com")
-                .password("1111")
-                .name("testName")
-                .countryCode("KR")
-                .build();
-
-        User expectedUser2 = User.builder()
-                .email("fff@bb.com")
-                .password("1111")
-                .name("testName")
-                .countryCode("KR")
-                .build();
-
-        userRepository.save(expectedUser1);
-        userRepository.save(expectedUser2);
-
-        //when
-        List<User> actualList = userRepository.findAll();
-
-        //then
-        assertThat(actualList).hasSize(2);
-    }
-
 }

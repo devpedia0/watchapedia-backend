@@ -28,15 +28,11 @@ public class ParticipantService {
         Image profileImage = null;
 
         if (profile != null && !profile.isEmpty()) {
-            profileImage = Image.of(profile, ImageCategory.POSTER);
+            profileImage = Image.of(profile, ImageCategory.PARTICIPANT_PROFILE);
             s3Service.upload(profile, profileImage.getPath());
         }
 
-        Participant participant = Participant.builder()
-                .name(request.getName())
-                .description(request.getDescription())
-                .profileImage(profileImage)
-                .build();
+        Participant participant = request.toEntity(profileImage);
 
         participantRepository.save(participant);
     }
@@ -45,21 +41,14 @@ public class ParticipantService {
         List<Participant> list = participantRepository.searchWithPaging(query, page, size);
 
         return list.stream()
-                .map(participant -> ParticipantDto.ParticipantInfo.builder()
-                        .id(participant.getId())
-                        .name(participant.getName())
-                        .description(participant.getDescription())
-                        .profileImagePath(
-                                participant.getProfileImage() != null
-                                        ? UrlUtil.getCloudFrontUrl(participant.getProfileImage().getPath()) : null)
-                        .build())
+                .map(ParticipantDto.ParticipantInfo::new)
                 .collect(Collectors.toList());
     }
 
     public void update(Long participantId, ParticipantDto.ParticipantUpdateRequest request) {
         Participant participant = participantRepository.findById(participantId);
         if (participant == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
-        participant.updateInfo(request.getName(), request.getDescription());
+        participant.updateInfo(request.getName(), request.getJob(), request.getDescription());
     }
 
     public void delete(Long id) {

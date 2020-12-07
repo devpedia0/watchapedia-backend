@@ -33,7 +33,7 @@ public abstract class Content {
     @Column(nullable = false)
     private LocalDate productionDate;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @Column(insertable = false, updatable = false)
@@ -56,6 +56,10 @@ public abstract class Content {
         this.description = description;
     }
 
+    public void setPosterImage(Image posterImage) {
+        this.posterImage = posterImage;
+    }
+
     public void addParticipant(Participant participant, String role, String characterName) {
         if (participant == null || role == null || characterName == null) return;
         ContentParticipant cp = ContentParticipant.builder()
@@ -74,6 +78,15 @@ public abstract class Content {
                 .tag(tag)
                 .build();
         this.addContentTag(ct);
+    }
+
+    public void addImage(Image image) {
+        if (image == null) return;
+        ContentImage ci = ContentImage.builder()
+                .content(this)
+                .image(image)
+                .build();
+        this.addContentImage(ci);
     }
 
     // 연관관계 메서드

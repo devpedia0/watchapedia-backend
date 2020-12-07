@@ -31,7 +31,7 @@ public class Reply extends BaseEntity {
     @JoinColumn(name = "reply_user_id", referencedColumnName = "user_id")
     private User user;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     public Reply(Comment comment, User user, String description) {

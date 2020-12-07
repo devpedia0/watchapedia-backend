@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum ImageCategory {
     POSTER("poster"),
     PARTICIPANT_PROFILE("pprofile"),
-    USER_PROFILE("uprofile");
+    USER_PROFILE("uprofile"),
+    GALLERY("gallery");
 
     private final String directory;
 }

@@ -30,7 +30,7 @@ public class Comment extends BaseEntity {
     @JoinColumn(name = "content_id")
     private Content content;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "spoiler_yn", nullable = false)

@@ -1,5 +1,6 @@
 package com.devpedia.watchapedia.dto;
 
+import com.devpedia.watchapedia.domain.Book;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
@@ -34,5 +35,19 @@ public class BookDto {
         private List<ParticipantDto.ParticipantRole> roles;
 
         private List<Long> tags;
+
+        public Book toEntity() {
+            return Book.builder()
+                    .posterImage(null)
+                    .mainTitle(this.mainTitle)
+                    .subtitle(this.subtitle)
+                    .category(this.category)
+                    .description(this.description)
+                    .productionDate(this.productionDate)
+                    .page(this.page)
+                    .elaboration(this.elaboration)
+                    .contents(this.contents)
+                    .build();
+        }
     }
 }

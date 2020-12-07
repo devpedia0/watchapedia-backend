@@ -8,7 +8,7 @@ import java.io.Serializable;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"participant_id", "content_id", "role"})})
+@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"participant_id", "content_id", "role", "characterName"})})
 public class ContentParticipant {
 
     @Id

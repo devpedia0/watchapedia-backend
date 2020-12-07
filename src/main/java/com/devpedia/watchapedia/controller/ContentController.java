@@ -20,10 +20,4 @@ public class ContentController {
 
     private final ContentService contentService;
 
-    @GetMapping("/admin/contents")
-    public List<ContentDto.CommonContentInfo> getContents(@RequestParam(required = false) String query,
-                                                          @RequestParam @Positive int page,
-                                                          @RequestParam @Min(1)@Max(20) int size) {
-        return contentService.searchAllWithPaging(query, page, size);
-    }
 }

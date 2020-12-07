@@ -18,7 +18,8 @@ spring:
     host: 222.111.195.42
   servlet:
     multipart:
-      max-file-size: 3MB
+      max-file-size: 2MB
+      max-request-size: 15MB
 
 cloud:
   aws:
@@ -34,4 +35,5 @@ cloud:
 logging:
   level:
     com.devpedia.watchapedia.controller: debug
+    com.devpedia.watchapedia.service: debug
     org.hibernate.SQL: debug
