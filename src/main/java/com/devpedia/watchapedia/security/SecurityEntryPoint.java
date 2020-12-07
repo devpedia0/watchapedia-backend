@@ -13,13 +13,21 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Set;
 
 @ControllerAdvice
 public class SecurityEntryPoint implements AuthenticationEntryPoint {
 
+    private static final Set<Integer> bypass = Set.of(
+            HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+            HttpServletResponse.SC_NOT_FOUND,
+            HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         // 401
+        if (bypass.contains(response.getStatus())) return;
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
     }
 
