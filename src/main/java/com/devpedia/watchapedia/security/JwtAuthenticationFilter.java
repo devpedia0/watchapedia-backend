@@ -26,10 +26,8 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
         try {
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // ExpiredJwtException, SignatureException, MalformedJwtException, UnsupportedJwtException
         } catch (JwtException | IllegalArgumentException e) {
-            ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//            ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         }
 
         chain.doFilter(request, response);
