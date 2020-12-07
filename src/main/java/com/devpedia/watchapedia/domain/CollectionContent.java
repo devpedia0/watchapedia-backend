@@ -15,7 +15,7 @@ public class CollectionContent {
 
     @MapsId("contentId")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cotent_id")
+    @JoinColumn(name = "content_id")
     private Content content;
 
     @MapsId("collectionId")
