@@ -61,40 +61,4 @@ public class MovieDto {
                     .build();
         }
     }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class MovieInfo {
-
-        private String mainTitle;
-
-        private String category;
-
-        private LocalDate productionDate;
-
-        private String description;
-
-        private String originTitle;
-
-        private String countryCode;
-
-        private Integer runningTimeInMinutes;
-
-        private Boolean isWatchaContent;
-
-        private Boolean isNetflixContent;
-
-        private Double bookRate;
-
-        private Long totalAudience;
-
-        private Movie movie;
-        public MovieInfo(Movie movie) {
-            this.movie = movie;
-        }
-
-    }
 }
