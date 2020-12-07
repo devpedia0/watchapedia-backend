@@ -120,6 +120,7 @@ public class ContentDto {
     @AllArgsConstructor
     @Builder
     public static class ListForAward {
+        private String type;
         private String title;
         private List<AwardItem> list;
     }
