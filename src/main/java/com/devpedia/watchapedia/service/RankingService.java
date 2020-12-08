@@ -22,7 +22,7 @@ public class RankingService {
     private final String NETFLIX_MOVIES = "netflix";
     private final String MARS_MOVIES = "mars";
     private final String KOREA_TV_SHOWS = "korea_tv";
-    private final String WHATCHA_TV_SHOWS = "whatcha_tv";
+    private final String WATCHA_TV_SHOWS = "watcha_tv";
     private final String NETFLIX_TV_SHOWS = "netflix_tv";
     private final String ALL_BEST_SELLER_BOOKS = "all_best_seller";
     private final String NEW_BEST_SELLER_BOOKS = "new_best_seller";
@@ -53,7 +53,7 @@ public class RankingService {
     }
 
     /**
-     * 랭킹 리스트 DTO 변환 함수
+     * 랭킹 리스트 DTO 변환
      * @param rankings 랭킹 리스트
      * @return 랭킹 DTO 리스트 반환
      */
@@ -74,7 +74,7 @@ public class RankingService {
                 else if(MARS_MOVIES.equals(ranking.getChartId())) rankingListContentsThird.add(rankingInfo);
             }else if(TV_SHOWS.equals(chartType)){
                 if(KOREA_TV_SHOWS.equals(ranking.getChartId())) rankingListContentsFirst.add(rankingInfo);
-                else if(WHATCHA_TV_SHOWS.equals(ranking.getChartId())) rankingListContentsSecond.add(rankingInfo);
+                else if(WATCHA_TV_SHOWS.equals(ranking.getChartId())) rankingListContentsSecond.add(rankingInfo);
                 else if(NETFLIX_TV_SHOWS.equals(ranking.getChartId())) rankingListContentsThird.add(rankingInfo);
             }else if(BOOKS.equals(chartType)){
                 if(ALL_BEST_SELLER_BOOKS.equals(ranking.getChartId())) rankingListContentsFirst.add(rankingInfo);
@@ -86,7 +86,7 @@ public class RankingService {
     }
 
     /**
-     * 랭킹 컨텐츠 DTO 리스트 반환 기
+     * 랭킹 컨텐츠 DTO 리스트 반환
      * @param chartType
      * @param rankingListContentsFirst 랭킹 첫번째 컨텐츠 리스트
      * @param rankingListContentsSecond 랭킹 두번째 컨텐츠 리스트
@@ -104,7 +104,7 @@ public class RankingService {
         }
         if(!rankingListContentsSecond.isEmpty()) {
             if (MOVIE.equals(chartType)) resultRankingInfoList.add(new RankingDto.RankingContentInfoList(titleList[1], MARS_MOVIES, rankingListContentsSecond.subList(0, rankingListContentsSecond.size() > 30 ? 30 : rankingListContentsSecond.size())));
-            else if (TV_SHOWS.equals(chartType)) resultRankingInfoList.add(new RankingDto.RankingContentInfoList(titleList[1], WHATCHA_TV_SHOWS, rankingListContentsSecond.subList(0, rankingListContentsSecond.size() > 30 ? 30 : rankingListContentsSecond.size())));
+            else if (TV_SHOWS.equals(chartType)) resultRankingInfoList.add(new RankingDto.RankingContentInfoList(titleList[1], WATCHA_TV_SHOWS, rankingListContentsSecond.subList(0, rankingListContentsSecond.size() > 30 ? 30 : rankingListContentsSecond.size())));
             else if (BOOKS.equals(chartType)) resultRankingInfoList.add(new RankingDto.RankingContentInfoList(titleList[1], NEW_BEST_SELLER_BOOKS, rankingListContentsSecond.subList(0, rankingListContentsSecond.size() > 30 ? 30 : rankingListContentsSecond.size())));
         }
         if(!rankingListContentsThird.isEmpty()) {
@@ -116,7 +116,7 @@ public class RankingService {
     }
 
     /**
-     * 차트 타입별 랭킹 타이틀 리스 값 반환 기능
+     * 차트 타입별 랭킹 타이틀 리스 값 반환
      * @param chartType
      * @return
      */
@@ -136,13 +136,13 @@ public class RankingService {
         else if(BOOKS.equals(chartType)){
             titleList[0] = "전체 베스트셀러";
             titleList[1] = "신간 베스트 셀러";
-            titleList[2] = "가장 많이 검색된 ";
+            titleList[2] = "가장 많이 검색된 책";
         }
         return titleList;
     }
 
     /**
-     * 랭킹 컨텐츠별 DTO 세팅 및 반
+     * 랭킹 컨텐츠별 DTO 세팅 및 반환
      * @param ranking 조회해온 랭킹 리스트
      * @param rankingContentScore 평점 리스
      * @return
@@ -204,7 +204,7 @@ public class RankingService {
     }
 
     /**
-     * 프록시 객체 사용을 위한 Convert 기
+     * 프록시 객체 사용을 위한 변환
      * @param ranking 조회해온 랭킹 리스트
      * @return
      */
