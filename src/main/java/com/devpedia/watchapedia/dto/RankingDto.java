@@ -1,9 +1,6 @@
 package com.devpedia.watchapedia.dto;
 
-import com.devpedia.watchapedia.domain.Content;
-import com.devpedia.watchapedia.domain.Image;
-import com.devpedia.watchapedia.domain.Movie;
-import com.devpedia.watchapedia.domain.Ranking;
+import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.enums.RankingChartIdState;
 import com.devpedia.watchapedia.domain.enums.RankingChartTypeState;
 import com.devpedia.watchapedia.domain.enums.RankingEnum;
@@ -55,13 +52,12 @@ public class RankingDto {
             this.content = ranking.getContent();
         }
     }
-
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class RankingContentChartInfo {
+    public static class RankingContentChartMovieInfo {
         private Long id;
 
         private String mainTitle;
@@ -92,7 +88,7 @@ public class RankingDto {
 
         private Long totalAudience;
 
-        public RankingContentChartInfo(Content content, String chartId, String chartType, Long chartRank, Object originTitle, Object countryCode, Object runningTimeInMinutes, Object isWatchaContent, Object isNetflixContent, Object bookRate, Object totalAudience) {
+        public RankingContentChartMovieInfo(Content content, String chartId, String chartType, Long chartRank, Object originTitle, Object countryCode, Object runningTimeInMinutes, Object isWatchaContent, Object isNetflixContent, Object bookRate, Object totalAudience) {
             this.id = content.getId();
             this.contentType = content.getDtype();
             this.mainTitle = content.getMainTitle();
@@ -115,9 +111,102 @@ public class RankingDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    public static class RankingContentChartTvShowInfo {
+        private Long id;
+
+        private String mainTitle;
+
+        private String contentType;
+
+        private LocalDate productionDate;
+
+        private String posterImagePath;
+
+        private String chartId;
+
+        private String chartType;
+
+        private Long chartRank;
+
+        private String originTitle;
+
+        private String countryCode;
+
+        private Boolean isWatchaContent;
+
+        private Boolean isNetflixContent;
+
+        public RankingContentChartTvShowInfo(Content content, String chartId, String chartType, Long chartRank, Object originTitle, Object countryCode,Object isWatchaContent, Object isNetflixContent) {
+            this.id = content.getId();
+            this.contentType = content.getDtype();
+            this.mainTitle = content.getMainTitle();
+            this.productionDate = content.getProductionDate();
+            this.posterImagePath = UrlUtil.getCloudFrontUrl(content.getPosterImage().getPath());
+            this.chartId = chartId;
+            this.chartType = chartType;
+            this.chartRank = chartRank;
+            this.originTitle = (String) originTitle;
+            this.countryCode = (String) countryCode;
+            this.isWatchaContent = (Boolean) isWatchaContent;
+            this.isNetflixContent = (Boolean) isNetflixContent;
+        }
+    }
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RankingContentChartBookInfo {
+        private Long id;
+
+        private String mainTitle;
+
+        private String contentType;
+
+        private LocalDate productionDate;
+
+        private String posterImagePath;
+
+        private String chartId;
+
+        private String chartType;
+
+        private Long chartRank;
+
+        private String contents;
+
+        private String elaboration;
+
+        private Integer page;
+
+        private String subTitle;
+
+
+        public RankingContentChartBookInfo(Content content, String chartId, String chartType, Long chartRank, Object contents, Object elaboration, Object page, Object subTitle) {
+            this.id = content.getId();
+            this.contentType = content.getDtype();
+            this.mainTitle = content.getMainTitle();
+            this.productionDate = content.getProductionDate();
+            this.posterImagePath = UrlUtil.getCloudFrontUrl(content.getPosterImage().getPath());
+            this.chartId = chartId;
+            this.chartType = chartType;
+            this.chartRank = chartRank;
+            this.contents = (String) contents;
+            this.elaboration = (String) elaboration;
+            this.page = (Integer) page;
+            this.subTitle = (String) subTitle;
+
+        }
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class RankingContentInfoList {
         private String title;
         private String type;
-        private List<RankingDto.RankingContentChartInfo> list;
+        private List<Object> list;
     }
 }

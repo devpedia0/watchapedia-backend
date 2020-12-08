@@ -44,7 +44,6 @@ public class RankingRepository {
                 .setParameter("chartType", chartType)
                 .setParameter("chartId", chartId)
                 .setFirstResult(0)
-                .setMaxResults(30)
                 .getResultList();
     }
 
@@ -68,13 +67,11 @@ public class RankingRepository {
                 "where r.chart_type = :chartType "+
                 "order by r.chart_rank";
 
-        List chartType1 = em.createNativeQuery(jpqlQuery
+        return em.createNativeQuery(jpqlQuery
                 , Ranking.class)
                 .setParameter("chartType", chartType)
                 .setFirstResult(0)
-                .setMaxResults(30)
                 .getResultList();
-        return chartType1;
     }
     /**
      * 해당 id로 조회한 컨텐츠들의 평균 평점을 맵 형태로 반환한다.

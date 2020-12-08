@@ -26,14 +26,14 @@ public class RankingController {
     private final RankingService rankingService;
     /**
      * 랭킹 차트 아이디 데이터 개별 조회
-     * @param charTypeRequest 차트 타입(영화,티비쇼,책)
-     * @param charIdRequest 차트 아이디(박스오피스,넷플릭스,왓챠)
+     * @param chartType 차트 타입(영화,티비쇼,책)
+     * @param chartId 차트 아이디(박스오피스,넷플릭스,왓챠)
      * @return 랭킹 차트 DTO 리스트 반환
      */
     @GetMapping("/public/{chartType}/ranking")
-    public List<RankingDto.RankingContentInfoList> getRankingList(@PathVariable("chartType") @RankingEnum(enumClass = RankingChartTypeState.class, ignoreCase = true) String charTypeRequest
-            , @RequestParam("chartId") @RankingEnum(enumClass = RankingChartIdState.class, ignoreCase = true) String charIdRequest){
-        return rankingService.searchWithRanking(charTypeRequest, charIdRequest);
+    public List<RankingDto.RankingContentInfoList> getRankingList(@PathVariable("chartType") @RankingEnum(enumClass = RankingChartTypeState.class, ignoreCase = true) String chartType
+            , @RequestParam("chartId") @RankingEnum(enumClass = RankingChartIdState.class, ignoreCase = true) String chartId){
+        return rankingService.searchWithRanking(chartType, chartId);
     }
 
     /**
