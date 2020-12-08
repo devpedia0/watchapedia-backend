@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
@@ -24,8 +25,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
+    // -- swagger ui
     private static final String[] AUTH_WHITELIST = {
-            // -- swagger ui
             "/swagger-resources/**",
             "/swagger-ui.html",
             "/v2/api-docs",
@@ -39,8 +40,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
                 .antMatchers("/auth/**")
                 .antMatchers("/public/**");
-
-
     }
 
     @Override
@@ -55,6 +54,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .authorizeRequests()
                     .antMatchers("/admin/**").hasAuthority("ADMIN")
+                    .antMatchers(HttpMethod.GET).permitAll()
                     .antMatchers(AUTH_WHITELIST).permitAll()
                     .anyRequest().authenticated()
                 .and()
