@@ -152,4 +152,37 @@ public class ContentRepository {
                 .setMaxResults(size)
                 .getResultList();
     }
+
+    /**
+     * 전체 평점 평가 개수를 구한다.
+     * @return 전체 평가 개수
+     */
+    public Long getTotalScoreCount() {
+        return (Long) em.createQuery(
+                "select count(s) " +
+                        "from Score s")
+                .getSingleResult();
+    }
+
+    /**
+     * 코멘트가 갯수가 많은 순으로 range 만큼 조회하고
+     * 그 중 size 개를 랜덤으로 뽑아낸다.
+     * @return 트렌트 컨텐츠 제목
+     */
+    public List<String> getTrendingWords(int range, int size) {
+        return em.createNativeQuery(
+                "select main_title " +
+                        "from (select " +
+                        "         c.main_title, " +
+                        "         (select count(cc.content_id) " +
+                        "         from comment cc " +
+                        "         where cc.content_id = c.content_id) as count " +
+                        "      from content c " +
+                        "      order by count desc " +
+                        "      limit :range) as t " +
+                        "order by rand()")
+                .setParameter("range", range)
+                .setMaxResults(size)
+                .getResultList();
+    }
 }
