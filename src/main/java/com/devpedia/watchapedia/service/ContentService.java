@@ -283,9 +283,9 @@ public class ContentService {
     }
 
     /**
-     * 부모 앤티티 컨텐츠 프록시 객체를 실제 컨텐츠 타입으로 언프록시 한다
-     * @param entity unproxy 할 컨텐츠(Content) 엔티티
-     * @return 컨텐츠 엔티티 (Movie, Book, TvShow)
+     * 프록시(HibernateProxy) 객체를 실제 컨텐츠 엔티티로 언프록시 한다
+     * @param entity unproxy 할 컨텐츠 엔티티
+     * @return unproxy 된 컨텐츠 엔티티
      */
     public <T extends Content> T initializeAndUnproxy(T entity) {
         if (entity == null) throw new NullPointerException("Entity passed for initialization is null");

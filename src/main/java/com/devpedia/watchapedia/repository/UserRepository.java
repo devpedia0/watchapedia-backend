@@ -63,9 +63,9 @@ public class UserRepository {
     }
 
     /**
-     * 컨텐츠별 유저가 매긴 평점와 보고싶어요, 보는중, 관심없어요, 코멘트 개수를 구한다.
+     * 컨텐츠별 유저가 매긴 평점과 보고싶어요, 보는중, 관심없어요, 코멘트 개수를 구한다.
      * @param id user_id
-     * @return 컨텐츠 별 유저 활동 개수
+     * @return 컨텐츠 별 유저 활동(평점, 보고싶어요, 보는중, 관심없어요, 코멘트) 개수
      */
     public UserDto.UserActionCounts getUserActionCounts(Long id) {
         List<Object[]> resultList = em.createNativeQuery(
