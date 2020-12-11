@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Getter
@@ -43,6 +44,10 @@ public class ErrorResponse {
 
     public static ErrorResponse of(ErrorCode code, BindingResult bindingResult) {
         return new ErrorResponse(code, code.getMessage(), ErrorField.listFrom(bindingResult));
+    }
+
+    public static ErrorResponse of(ErrorCode code, ErrorField... errors) {
+        return new ErrorResponse(code, code.getMessage(), Arrays.asList(errors));
     }
 
     public static ErrorResponse from(BusinessException e) {

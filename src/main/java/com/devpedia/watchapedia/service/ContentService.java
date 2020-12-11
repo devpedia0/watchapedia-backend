@@ -6,6 +6,7 @@ import com.devpedia.watchapedia.domain.enums.ImageCategory;
 import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.ParticipantDto;
 import com.devpedia.watchapedia.exception.InvalidFileException;
+import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.repository.CollectionRepository;
 import com.devpedia.watchapedia.repository.ContentRepository;
@@ -13,6 +14,8 @@ import com.devpedia.watchapedia.repository.ParticipantRepository;
 import com.devpedia.watchapedia.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
+import org.hibernate.proxy.HibernateProxy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -275,6 +278,23 @@ public class ContentService {
     public <T extends Content> String classTypeToString(Class<T> tClass) {
         if (tClass == Movie.class) return "M";
         else if (tClass == Book.class) return "B";
-        else return "S";
+        else if (tClass == TvShow.class) return "S";
+        else throw new ValueNotMatchException(ErrorCode.CONTENT_TYPE_NOT_VALID);
+    }
+
+    /**
+     * 프록시(HibernateProxy) 객체를 실제 컨텐츠 엔티티로 언프록시 한다
+     * @param entity unproxy 할 컨텐츠 엔티티
+     * @return unproxy 된 컨텐츠 엔티티
+     */
+    public <T extends Content> T initializeAndUnproxy(T entity) {
+        if (entity == null) throw new NullPointerException("Entity passed for initialization is null");
+
+        Hibernate.initialize(entity);
+
+        if (entity instanceof HibernateProxy)
+            entity = (T) ((HibernateProxy) entity).getHibernateLazyInitializer().getImplementation();
+
+        return entity;
     }
 }

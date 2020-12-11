@@ -1,6 +1,7 @@
 package com.devpedia.watchapedia.exception.handler;
 
 import com.devpedia.watchapedia.exception.common.ErrorCode;
+import com.devpedia.watchapedia.exception.common.ErrorField;
 import com.devpedia.watchapedia.exception.common.ErrorResponse;
 import io.jsonwebtoken.JwtException;
 import lombok.extern.log4j.Log4j2;
@@ -11,9 +12,11 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import javax.validation.ConstraintViolationException;
+import java.util.Objects;
 
 @ControllerAdvice
 @Log4j2
@@ -21,6 +24,13 @@ public class CommonExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     protected ResponseEntity<ErrorResponse> handleBindException(MethodArgumentNotValidException e) {
         ErrorResponse response = ErrorResponse.of(ErrorCode.INPUT_VALUE_INVALID, e.getBindingResult());
+        return new ResponseEntity<>(response, response.getStatus());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    protected ResponseEntity<ErrorResponse> handleBindException(MethodArgumentTypeMismatchException e) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.INPUT_VALUE_INVALID,
+                ErrorField.of(e.getParameter().getParameterName(), Objects.requireNonNull(e.getValue()).toString(), ""));
         return new ResponseEntity<>(response, response.getStatus());
     }
 

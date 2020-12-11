@@ -1,7 +1,12 @@
 package com.devpedia.watchapedia.controller;
 
-import com.devpedia.watchapedia.domain.User;
+import com.devpedia.watchapedia.domain.*;
+import com.devpedia.watchapedia.domain.enums.InterestState;
+import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.UserDto;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
+import com.devpedia.watchapedia.dto.enums.InterestContentOrder;
+import com.devpedia.watchapedia.dto.enums.RatingContentOrder;
 import com.devpedia.watchapedia.exception.ExternalIOException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.repository.RedisRepository;
@@ -13,9 +18,6 @@ import com.devpedia.watchapedia.util.UrlUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.ResponseHeader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -29,15 +31,17 @@ import org.springframework.web.client.RestTemplate;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.*;
 import java.security.Principal;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
 @Validated
 @RequiredArgsConstructor
 public class UserController {
+    private static final String USER_ID_HEADER = "Id";
 
     private final UserService userService;
     private final UserRepository userRepository;
@@ -48,23 +52,23 @@ public class UserController {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    @ApiResponses({
-            @ApiResponse(code = 201, message = "회원가입 완료"),
-            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C002: 이미 등록된 유저 \t\n C006: 삭제 유예중인 유저")
-    })
+    /**
+     * 유저 회원가입
+     * @param request 유저 회원가입 정보
+     */
     @PostMapping("/auth/signup")
     @ResponseStatus(HttpStatus.CREATED)
     public void signup(@RequestBody @Valid UserDto.SignupRequest request) {
         userService.join(request);
     }
 
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "엑세스 토큰과 리프레쉬 토큰을 헤더에 담아서 반환", responseHeaders = {
-                    @ResponseHeader(name = JwtTokenProvider.ACCESS_TOKEN_HEADER, description = "엑세스 토큰", response = String.class),
-                    @ResponseHeader(name = JwtTokenProvider.REFRESH_TOKEN_HEADER, description = "리프레쉬 토큰", response = String.class)
-            }),
-            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 등록 안된 유저 \t\n C004: 비밀번호 불일치, \t\n C006: 삭제 유예중인 유저")
-    })
+    /**
+     * 회원 로그인.
+     * 로그인 성공 시 Redis 에 리프레쉬 토큰 등록.
+     * 엑세스 토큰, 리프레쉬 토큰, 유저 PK 헤더에 반환.
+     * @param request 유저 로그인 정보
+     * @return 엑세스 토큰, 리프레쉬 토큰, 유저 PK
+     */
     @PostMapping("/auth/signin")
     public ResponseEntity<Void> signin(@RequestBody @Valid UserDto.SigninRequest request) {
         User user = userService.getMatchedUser(request.getEmail(), request.getPassword());
@@ -77,16 +81,18 @@ public class UserController {
         return ResponseEntity.ok()
                 .header(JwtTokenProvider.ACCESS_TOKEN_HEADER, accessToken)
                 .header(JwtTokenProvider.REFRESH_TOKEN_HEADER, refreshToken)
+                .header(USER_ID_HEADER, String.valueOf(user.getId()))
                 .build();
     }
 
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "엑세스 토큰과 리프레쉬 토큰을 헤더에 담아서 반환", responseHeaders = {
-                    @ResponseHeader(name = JwtTokenProvider.ACCESS_TOKEN_HEADER, description = "엑세스 토큰", response = String.class),
-                    @ResponseHeader(name = JwtTokenProvider.REFRESH_TOKEN_HEADER, description = "리프레쉬 토큰", response = String.class)
-            }),
-            @ApiResponse(code = 400, message = "B001: 페이스북 오류 \t\n C001: 부적절한 입력값")
-    })
+    /**
+     * 페이스북 엑세스 토큰으로 페이스북 유저 정보를 가져온다.
+     * 존재하지 않는 회원이면 DB에 저장한다.
+     * 로그인 성공 시 Redis 에 리프레쉬 토큰 등록.
+     * 엑세스 토큰, 리프레쉬 토큰, 유저 PK 헤더에 반환.
+     * @param tokenInfo 페이스북 엑세스 토큰
+     * @return 엑세스 토큰, 리프레쉬 토큰, 유저 PK
+     */
     @PostMapping("/auth/facebook")
     public ResponseEntity<Void> oauthFacebook(@RequestBody @Valid UserDto.OAuthTokenInfo tokenInfo) {
         String url = UrlUtil.buildFacebookUrl(UserDto.FacebookUserInfo.class, tokenInfo.getAccessToken());
@@ -109,6 +115,7 @@ public class UserController {
             return ResponseEntity.ok()
                     .header(JwtTokenProvider.ACCESS_TOKEN_HEADER, accessToken)
                     .header(JwtTokenProvider.REFRESH_TOKEN_HEADER, refreshToken)
+                    .header(USER_ID_HEADER, String.valueOf(user.getId()))
                     .build();
 
         } catch (JsonProcessingException | RestClientException e) {
@@ -116,13 +123,13 @@ public class UserController {
         }
     }
 
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "엑세스 토큰을 헤더에 담아서 반환", responseHeaders = {
-                    @ResponseHeader(name = JwtTokenProvider.ACCESS_TOKEN_HEADER, description = "엑세스 토큰", response = String.class)
-            }),
-            @ApiResponse(code = 400, message = "C001: 리프레쉬 토큰 헤더 빈값 오류"),
-            @ApiResponse(code = 401, message = "C005: 유효하지 않은 리프레쉬 토큰")
-    })
+    /**
+     * 리프레쉬 토큰으로 새로운 엑세스 토큰을 발급한다.
+     * 리프레쉬 토큰이 Redis 에 정상 등록된 토큰이 아니라면
+     * Throw Exception
+     * @param refreshToken 리프레쉬 토큰
+     * @return 엑세스 토큰
+     */
     @PostMapping("/auth/token")
     public ResponseEntity<Void> refreshAccessToken(
             @RequestHeader(name = JwtTokenProvider.REFRESH_TOKEN_HEADER) @NotBlank String refreshToken) {
@@ -134,48 +141,169 @@ public class UserController {
                 .build();
     }
 
+    /**
+     * 회원가입 시 이메일 중복체크 용 API
+     * @param email 검증하는 이메일
+     * @return exist: true | false
+     */
     @GetMapping("/public/email")
     public UserDto.EmailCheckResult checkEmail(@RequestParam("email") @NotNull String email) {
         return userService.isExistEmail(email);
     }
 
-    @ApiResponses({
-            @ApiResponse(code = 400, message = "C003: 존재하지 않는 유저")
-    })
-    @GetMapping("/users/me")
-    public UserDto.UserInfo getMyUserInfo(@ApiIgnore Principal principal) {
-        Long id = Long.valueOf(principal.getName());
-        return userService.getUserInfo(id);
+    /**
+     * 유저정보를 가져온다.
+     * name, email, description, countryCode, accessRange,
+     * isEmailAgreed, isSmsAgreed, isPushAgreed, roles
+     * @param targetId 조회 대상
+     * @param principal 토큰 정보
+     * @return 유저 정보
+     */
+    @GetMapping("/users/{id}")
+    public UserDto.UserInfo getMyUserInfo(@PathVariable("id") Long targetId, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        return userService.getUserInfo(targetId, tokenId);
     }
 
-    @ApiResponses({
-            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 존재하지 않는 유저")
-    })
-    @PutMapping("/users/me")
+    /**
+     * 유저 정보를 변경한다.
+     * DTO 의 값이 빈값이면 그 정보는 변경하지 않는다.
+     * name, email, description, countryCode, accessRange,
+     * isEmailAgreed, isSmsAgreed, isPushAgreed
+     * @param request 유저 정보 변경
+     * @param principal 토큰 정보
+     */
+    @PutMapping("/users/settings")
     public void editSettings(@RequestBody @Valid UserDto.UserInfoEditRequest request,
                              @ApiIgnore Principal principal) {
-        Long id = Long.valueOf(principal.getName());
+        Long id = principal != null ? Long.valueOf(principal.getName()) : null;
         userService.editUserInfo(id, request);
     }
 
-    @ApiResponses({
-            @ApiResponse(code = 400, message = "C001: 부적절한 입력값 \t\n C003: 존재하지 않는 유저")
-    })
-    @DeleteMapping("/users/me")
+    /**
+     * 유저를 논리적으로 삭제한다.
+     * delete_yn = true
+     * @param principal 토큰 정보
+     */
+    @DeleteMapping("/users")
     public void deleteUser(@ApiIgnore Principal principal) {
-        Long id = Long.valueOf(principal.getName());
+        Long id = principal != null ? Long.valueOf(principal.getName()) : null;
         userService.delete(id);
     }
 
     /**
-     * 토큰에 담겨온 유저의 각 매체별(영화, 책, TV)
-     * 평점 평가 개수와 보고싶어요 누른 개수를 반환한다.
+     * 유저의 각 매체별(영화, 책, TV)
+     * 평점, 보고싶어요, 보는중, 관심없음, 코멘트 개수를 반환한다.
+     * @param targetId 조회 대상 유저 ID
      * @param principal 유저 토큰 정보
-     * @return 평가 개수 & 보고싶어요 개수
+     * @return 평점, 보고싶어요, 보는중, 관심없음, 코멘트 개수
      */
-    @GetMapping("/users/me/ratings")
-    public UserDto.UserRatingAndWishContent getRatingInfo(@ApiIgnore Principal principal){
-        Long id = Long.valueOf(principal.getName());
-        return userService.getRatingInfo(id);
+    @GetMapping("/users/{id}/ratings")
+    public UserDto.UserActionCounts getRatingInfo(@PathVariable("id") Long targetId, @ApiIgnore Principal principal){
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        return userService.getRatingInfo(targetId, tokenId);
+    }
+
+    /**
+     * 유저가 평가한 작품을 컨텐츠 별 정렬해서 반환한다.
+     * @param targetId 조회 대상 유저
+     * @param principal 토큰 정보
+     * @param contentType 컨텐츠 타입(movies, books, tv_shows)
+     * @param order 정렬 순서(평점평균=avg_score, 신작=new, 가나다=title)
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 유저가 평가한 작품 리스트
+     */
+    @GetMapping("/users/{id}/{contentType}/ratings")
+    public List<ContentDto.MainListItem> getMovieRating(@PathVariable("id") Long targetId, @ApiIgnore Principal principal,
+                                                        @PathVariable ContentTypeParameter contentType,
+                                                        @RequestParam(required = false) RatingContentOrder order,
+                                                        @RequestParam @Positive int page,
+                                                        @RequestParam @Min(1)@Max(20) int size) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        UserDto.RatingContentParameter parameter = new UserDto.RatingContentParameter(contentType, order, page, size);
+        return userService.getContentByRating(targetId, tokenId, null, parameter);
+    }
+
+    /**
+     * 유저가 평가한 작품을 유저가 매긴 평점 별로 개수 및 리스트로 반환한다.
+     * @param targetId 조회 대상 유저
+     * @param principal 토큰 정보
+     * @param contentType 컨텐츠 타입(movies, books, tv_shows)
+     * @param size 평점 그룹 별 리스트 사이즈
+     * @return 평점 그룹 별 개수 및 리스트
+     */
+    @GetMapping("/users/{id}/{contentType}/ratings/by_rating")
+    public Map<Double, UserDto.UserRatingGroup> getMovieByRatingGroup(@PathVariable("id") Long targetId, @ApiIgnore Principal principal,
+                                                                      @PathVariable ContentTypeParameter contentType,
+                                                                      @RequestParam @Min(1) @Max(20) int size) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        UserDto.RatingContentParameter parameter = new UserDto.RatingContentParameter(contentType, null, 1, size);
+        return userService.getContentByRatingGroup(targetId, tokenId, parameter);
+    }
+
+    /**
+     * 유저가 평가한 작품 중 특정 평점을 준 작품 리스트를 조회한다.
+     * @param targetId 조회 대상 유저
+     * @param principal 토큰 정보
+     * @param contentType 컨텐츠 타입(movies, books, tv_shows)
+     * @param score 조회하려는 평점
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 특정 평점의 작품 리스트
+     */
+    @GetMapping("/users/{id}/{contentType}/ratings/{score}")
+    public List<ContentDto.MainListItem> getMovieByRatings(@PathVariable("id") Long targetId, @ApiIgnore Principal principal,
+                                                           @PathVariable ContentTypeParameter contentType,
+                                                           @PathVariable Double score,
+                                                           @RequestParam @Positive int page,
+                                                           @RequestParam @Min(1) @Max(20) int size) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        UserDto.RatingContentParameter parameter = new UserDto.RatingContentParameter(contentType, RatingContentOrder.TITLE, page, size);
+        return userService.getContentByRating(targetId, tokenId, score, parameter);
+    }
+
+    /**
+     * 유저가 보고싶어요 표시한 작품을 정렬해서 반환한다.
+     * @param targetId 조회 대상 유저
+     * @param principal 토큰 정보
+     * @param contentType 컨텐츠 타입(movies, books, tv_shows)
+     * @param order 정렬 순서(평점평균=avg_score, 신작=new, 구작=old, 가나다=title)
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 보고싶어요 작품 리스트
+     */
+    @GetMapping("/users/{id}/{contentType}/wishes")
+    public List<ContentDto.MainListItem> getMovieByWish(@PathVariable("id") Long targetId, @ApiIgnore Principal principal,
+                                                        @PathVariable ContentTypeParameter contentType,
+                                                        @RequestParam(required = false) InterestContentOrder order,
+                                                        @RequestParam @Positive int page,
+                                                        @RequestParam @Min(1) @Max(20) int size) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        UserDto.InterestContentParameter parameter =
+                new UserDto.InterestContentParameter(contentType, InterestState.WISH, order, page, size);
+        return userService.getContentByInterest(targetId, tokenId, parameter);
+    }
+
+    /**
+     * 유저가 보는 중 표시한 작품을 정렬해서 반환한다.
+     * @param targetId 조회 대상 유저
+     * @param principal 토큰 정보
+     * @param contentType 컨텐츠 타입(movies, books, tv_shows)
+     * @param order 정렬 순서(평점평균=avg_score, 신작=new, 구작=old, 가나다=title)
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 보는중 작품 리스트
+     */
+    @GetMapping("/users/{id}/{contentType}/watchings")
+    public List<ContentDto.MainListItem> getMovieByWatching(@PathVariable("id") Long targetId, @ApiIgnore Principal principal,
+                                                            @PathVariable ContentTypeParameter contentType,
+                                                            @RequestParam(required = false) InterestContentOrder order,
+                                                            @RequestParam @Positive int page,
+                                                            @RequestParam @Min(1) @Max(20) int size) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        UserDto.InterestContentParameter parameter =
+                new UserDto.InterestContentParameter(contentType, InterestState.WATCHING, order, page, size);
+        return userService.getContentByInterest(targetId, tokenId, parameter);
     }
 }

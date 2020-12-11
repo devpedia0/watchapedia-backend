@@ -24,7 +24,7 @@ public class CollectionRepository {
         return em.createNativeQuery(
                 "select c2.* " +
                         "from collection_content cc " +
-                        "join content c on cc.cotent_id = c.content_id " +
+                        "join content c on cc.content_id = c.content_id " +
                         "join collection c2 on cc.collection_id = c2.collection_id " +
                         "and c.dtype = :type " +
                         "group by cc.collection_id " +

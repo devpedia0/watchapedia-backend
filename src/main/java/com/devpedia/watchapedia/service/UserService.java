@@ -1,13 +1,15 @@
 package com.devpedia.watchapedia.service;
 
-import com.devpedia.watchapedia.domain.User;
+import com.devpedia.watchapedia.domain.*;
+import com.devpedia.watchapedia.domain.enums.AccessRange;
+import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.UserDto;
+import com.devpedia.watchapedia.exception.AccessDeniedException;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.ValueDuplicatedException;
 import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.exception.common.ErrorField;
-import com.devpedia.watchapedia.repository.ContentRepository;
 import com.devpedia.watchapedia.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -15,7 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -23,7 +26,7 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final ContentRepository contentRepository;
+    private final ContentService contentService;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -117,13 +120,30 @@ public class UserService {
     }
 
     /**
+     * 유저정보 공개범위에 따라 요청의 권한 여부를 체크하고
      * 유저 이메일, 이름, 설명, 국가코드, 각종 설정, 권한 등을 반환한다.
-     * @param id user_id
+     * @param targetId 조회하고자하는 유저 ID
+     * @param tokenId 토큰에 담긴 유저 ID
      * @return 유저 정보
      */
-    public UserDto.UserInfo getUserInfo(Long id) {
-        User user = getUserIfExistOrThrow(id);
+    public UserDto.UserInfo getUserInfo(Long targetId, Long tokenId) {
+        User user = getUserIfExistOrThrow(targetId);
+        if (isAccessNotAvailable(targetId, tokenId))
+            throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
         return new UserDto.UserInfo(user);
+    }
+
+    /**
+     * 유저가 설정한 공개범위에 따라 해당 토큰의 조회가능 여부를 반환한다.
+     * @param targetUserId 조회하고자하는 유저
+     * @param tokenUserId 토큰에 담긴 유저
+     * @return 조회가능 여부
+     */
+    private boolean isAccessNotAvailable(Long targetUserId, Long tokenUserId) {
+        User targetUser = userRepository.findById(targetUserId);
+        if (targetUser == null || targetUser.getIsDeleted())
+            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        return targetUser.getAccessRange() == AccessRange.PRIVATE && !targetUserId.equals(tokenUserId);
     }
 
     /**
@@ -171,7 +191,7 @@ public class UserService {
     }
 
     /**
-     * 해당 이메일로 로 유저를 조회한다.
+     * 해당 이메일로 유저를 조회한다.
      * 존재하지 않거나 삭제된 유저라면 Exception
      * @param email 이메일
      * @return 유저
@@ -185,11 +205,93 @@ public class UserService {
 
     /**
      * 해당 아이디의 유저가 매긴
-     * 컨텐츠 별 평가 개수, 보고싶어요 개수를 반환한다.
-     * @param id user_id
-     * @return 컨텐츠 별 평가 및 보고싶어요 개수
+     * 컨텐츠 별 활동 개수를 반환한다.
+     * @param targetId 조회 대상 유저 ID
+     * @param tokenId 토큰 유저 ID
+     * @return 컨텐츠 별 유저 활동 개수
      */
-    public UserDto.UserRatingAndWishContent getRatingInfo(Long id) {
-        return userRepository.getRatingAndWishCounts(id);
+    public UserDto.UserActionCounts getRatingInfo(Long targetId, Long tokenId) {
+        if (isAccessNotAvailable(targetId, tokenId))
+            throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
+        return userRepository.getUserActionCounts(targetId);
+    }
+
+    /**
+     * 유저가 평점을 매긴 작품을 평점 그룹(0.5 ~ 5.0) 별로
+     * 해당하는 작품 개수와 작품 리스트를 화면용 DTO 리스트 형태로 가져온다.
+     * @param targetId 조회 대상 유저
+     * @param tokenId 토큰 정보
+     * @param parameter type, order, page, size
+     * @return 평점 그룹 별 개수 및 리스트
+     */
+    public Map<Double, UserDto.UserRatingGroup> getContentByRatingGroup(Long targetId, Long tokenId,
+                                                                        UserDto.RatingContentParameter parameter) {
+        if (isAccessNotAvailable(targetId, tokenId))
+            throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
+
+        Map<Double, Integer> counts = userRepository.getGroupedScoreCount(targetId, parameter.getType().getDtype());
+        List<Score> scores = userRepository.findUserGroupedScore(targetId, parameter.getType().getDtype(), parameter.getSize());
+
+        Map<Double, UserDto.UserRatingGroup> result = new LinkedHashMap<>();
+
+        for (double score = 0.5; score <= 5; score += 0.5) {
+            result.putIfAbsent(score, UserDto.UserRatingGroup.builder()
+                    .count(counts.getOrDefault(score, 0))
+                    .list(new ArrayList<>())
+                    .build());
+        }
+
+        for (Score score : scores) {
+            Content content = contentService.initializeAndUnproxy(score.getContent());
+            result.get(score.getScore()).getList().add(ContentDto.MainListItem.of(content, score.getScore()));
+        }
+
+        return result;
+    }
+
+    /**
+     * 유저가 평점을 매긴 작품들을 정렬해서
+     * 화면에서 보여주기 위한 DTO 리스트 형태로 가져온다.
+     * score 가 null 이면 전체 점수에 해당하는 작품 조회,
+     * 혹은 0.5 ~ 5.0 각각에 해당하는 작품 조회.
+     * @param targetId 조회 대상 유저
+     * @param tokenId 토큰 정보
+     * @param score 조회 점수(null 이면 전체 조회)
+     * @param parameter type, order, page, size
+     * @return 작품 리스트
+     */
+    public List<ContentDto.MainListItem> getContentByRating(Long targetId, Long tokenId, Double score,
+                                                            UserDto.RatingContentParameter parameter) {
+        if (isAccessNotAvailable(targetId, tokenId))
+            throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
+
+        List<Score> scores = userRepository.findUserScores(targetId, parameter.getType().getDtype(), score,
+                parameter.getOrder(), parameter.getPage(), parameter.getSize());
+
+        return scores.stream()
+                .map(s -> ContentDto.MainListItem.of(contentService.initializeAndUnproxy(s.getContent()), s.getScore()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 유저가 보고싶어요, 보는중, 관심없음을 매긴 작품들을 정렬해서
+     * 화면에서 보여주기 위한 DTO 리스트 형태로 가져온다.
+     * @param targetId 조회 대상 유저
+     * @param tokenId 토큰 정보
+     * @param parameter type, order, state(보는중, 보고싶어요, 관심없음), page, size
+     * @return 해당 관심종류 리스트
+     */
+    public List<ContentDto.MainListItem> getContentByInterest(Long targetId, Long tokenId,
+                                                              UserDto.InterestContentParameter parameter) {
+        if (isAccessNotAvailable(targetId, tokenId))
+            throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
+
+        List<Interest> interests = userRepository.findUserInterestContent(targetId,
+                parameter.getType().getDtype(), parameter.getState().getCode(),
+                parameter.getOrder(), parameter.getPage(), parameter.getSize());
+
+        return interests.stream()
+                .map(i -> ContentDto.MainListItem.of(contentService.initializeAndUnproxy(i.getContent()), null))
+                .collect(Collectors.toList());
     }
 }
