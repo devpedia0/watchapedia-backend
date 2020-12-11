@@ -26,7 +26,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private final JwtTokenProvider jwtTokenProvider;
 
     // -- swagger ui
-    private static final String[] AUTH_WHITELIST = {
+    public static final String[] SWAGGER_AUTH_WHITELIST = {
             "/swagger-resources/**",
             "/swagger-ui.html",
             "/v2/api-docs",
@@ -55,7 +55,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                     .antMatchers("/admin/**").hasAuthority("ADMIN")
                     .antMatchers(HttpMethod.GET).permitAll()
-                    .antMatchers(AUTH_WHITELIST).permitAll()
+                    .antMatchers(SWAGGER_AUTH_WHITELIST).permitAll()
                     .anyRequest().authenticated()
                 .and()
                 .exceptionHandling()

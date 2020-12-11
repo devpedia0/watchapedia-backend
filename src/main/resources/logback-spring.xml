@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml" />
+
+    <property name="LOGSTASH_URL" value="222.111.195.42:5000" />
+
+    <appender name="LOGSTASH_API" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>${LOGSTASH_URL}</destination>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <mdc />
+                <pattern>
+                    <pattern>
+                        { "serviceID": "watchapedia" }
+                    </pattern>
+                </pattern>
+                <arguments fieldName="logs" />
+                <timestamp />
+                <context />
+                <threadName />
+                <logLevel />
+                <loggerName />
+                <logstashMarkers />
+                <stackTrace />
+                <callerData />
+            </providers>
+        </encoder>
+    </appender>
+
+    <appender name="LOGSTASH_ERROR" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>error</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <destination>${LOGSTASH_URL}</destination>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <mdc />
+                <pattern>
+                    <pattern>
+                        { "serviceID": "watchapedia" }
+                    </pattern>
+                </pattern>
+                <arguments fieldName="stackTrace" />
+                <arguments fieldName="exception" />
+                <timestamp />
+                <context />
+                <threadName />
+                <logLevel />
+                <loggerName />
+                <logstashMarkers />
+                <callerData />
+            </providers>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="LOGSTASH_ERROR" />
+    </root>
+
+    <logger name="com.devpedia.watchapedia.logging.LogUtil" level="INFO" additivity="false">
+        <appender-ref ref="LOGSTASH_API" />
+    </logger>
+</configuration>

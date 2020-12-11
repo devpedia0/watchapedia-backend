@@ -11,6 +11,7 @@ public enum ErrorCode {
     // A: Etc
     ACCESS_NOT_AVAILABLE(BAD_REQUEST, "A001", "조회할 권한이 없습니다."),
     CONTENT_TYPE_NOT_VALID(INTERNAL_SERVER_ERROR, "A002", "Class 타입 변환 실패"),
+    INTERNAL_ERROR(INTERNAL_SERVER_ERROR, "A999", "Unknown Internal Error"),
 
     // B: IO Fail
     OAUTH_PROVIDER_FAIL(BAD_REQUEST, "B001", "OAuth인증에 실패했습니다"),

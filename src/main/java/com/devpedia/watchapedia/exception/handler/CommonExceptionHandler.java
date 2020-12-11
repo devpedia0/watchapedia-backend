@@ -16,11 +16,27 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import javax.validation.ConstraintViolationException;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static net.logstash.logback.argument.StructuredArguments.*;
 
 @ControllerAdvice
 @Log4j2
 public class CommonExceptionHandler {
+    @ExceptionHandler(RuntimeException.class)
+    protected ResponseEntity<ErrorResponse> handleBindException(RuntimeException e) {
+        e.printStackTrace();
+        String stackTrace = Arrays.stream(e.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.joining(" "));
+        log.error("{} {} {}",
+                keyValue("exception_stack_trace", stackTrace),
+                keyValue("exception_class", e.getClass().getSimpleName()),
+                keyValue("exception_message", e.getMessage()));
+        ErrorResponse response = ErrorResponse.of(ErrorCode.INTERNAL_ERROR);
+        return new ResponseEntity<>(response, response.getStatus());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     protected ResponseEntity<ErrorResponse> handleBindException(MethodArgumentNotValidException e) {
         ErrorResponse response = ErrorResponse.of(ErrorCode.INPUT_VALUE_INVALID, e.getBindingResult());
