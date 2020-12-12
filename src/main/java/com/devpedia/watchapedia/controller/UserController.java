@@ -41,7 +41,7 @@ import java.util.Map;
 @Validated
 @RequiredArgsConstructor
 public class UserController {
-    private static final String USER_ID_HEADER = "Id";
+    public static final String USER_ID_HEADER = "Id";
 
     private final UserService userService;
     private final UserRepository userRepository;
