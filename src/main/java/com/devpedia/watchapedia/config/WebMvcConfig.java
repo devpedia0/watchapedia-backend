@@ -1,5 +1,6 @@
 package com.devpedia.watchapedia.config;
 
+import com.devpedia.watchapedia.controller.UserController;
 import com.devpedia.watchapedia.dto.enums.ContentTypeParameterConverter;
 import com.devpedia.watchapedia.dto.enums.InterestContentOrderConverter;
 import com.devpedia.watchapedia.dto.enums.RatingContentOrderConverter;
@@ -16,7 +17,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins("*")
                 .allowedMethods("*")
-                .exposedHeaders(JwtTokenProvider.ACCESS_TOKEN_HEADER, JwtTokenProvider.REFRESH_TOKEN_HEADER);
+                .exposedHeaders(
+                        JwtTokenProvider.ACCESS_TOKEN_HEADER,
+                        JwtTokenProvider.REFRESH_TOKEN_HEADER,
+                        UserController.USER_ID_HEADER
+                );
     }
 
     @Override
