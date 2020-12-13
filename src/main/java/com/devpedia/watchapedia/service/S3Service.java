@@ -12,11 +12,12 @@ import com.devpedia.watchapedia.exception.ExternalIOException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 @Service
@@ -47,12 +48,34 @@ public class S3Service {
                 .build();
     }
 
+    /**
+     * 이미지를 S3에 업로드한다.
+     * @param file 이미지 멀티파트 파일
+     * @param filePath S3 Bucket 내의 경로(파일 이름 포함)
+     */
     public void upload(MultipartFile file, String filePath) {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(file.getSize());
 
         try {
             s3Client.putObject(new PutObjectRequest(bucket, filePath, file.getInputStream(), objectMetadata)
+                    .withCannedAcl(CannedAccessControlList.PublicRead));
+        } catch (IOException e) {
+            throw new ExternalIOException(ErrorCode.INPUT_VALUE_INVALID, "S3 image upload fail");
+        }
+    }
+
+    /**
+     * 이미지를 S3에 업로드한다.
+     * @param file 이미지 파일
+     * @param filePath S3 Bucket 내의 경로(파일 이름 포함)
+     */
+    public void upload(File file, String filePath) {
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentLength(file.length());
+
+        try {
+            s3Client.putObject(new PutObjectRequest(bucket, filePath, new FileInputStream(file), objectMetadata)
                     .withCannedAcl(CannedAccessControlList.PublicRead));
         } catch (IOException e) {
             throw new ExternalIOException(ErrorCode.INPUT_VALUE_INVALID, "S3 image upload fail");
