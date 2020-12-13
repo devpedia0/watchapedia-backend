@@ -20,9 +20,6 @@ spring:
     multipart:
       max-file-size: 2MB
       max-request-size: 15MB
-  batch:
-    job:
-      names: ${job.name:NONE}
 
 cloud:
   aws:
@@ -39,5 +36,4 @@ logging:
   level:
     com.devpedia.watchapedia.controller: debug
     com.devpedia.watchapedia.service: debug
-    com.devpedia.watchapedia.job: debug
     org.hibernate.SQL: debug
