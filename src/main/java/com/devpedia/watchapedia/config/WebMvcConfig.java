@@ -4,14 +4,21 @@ import com.devpedia.watchapedia.controller.UserController;
 import com.devpedia.watchapedia.dto.enums.ContentTypeParameterConverter;
 import com.devpedia.watchapedia.dto.enums.InterestContentOrderConverter;
 import com.devpedia.watchapedia.dto.enums.RatingContentOrderConverter;
+import com.devpedia.watchapedia.logging.LoggingInterceptor;
 import com.devpedia.watchapedia.security.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
+
+    private final LoggingInterceptor loggingInterceptor;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
@@ -29,5 +36,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addConverter(new RatingContentOrderConverter());
         registry.addConverter(new InterestContentOrderConverter());
         registry.addConverter(new ContentTypeParameterConverter());
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(loggingInterceptor).excludePathPatterns(WebSecurityConfig.SWAGGER_AUTH_WHITELIST);
     }
 }
