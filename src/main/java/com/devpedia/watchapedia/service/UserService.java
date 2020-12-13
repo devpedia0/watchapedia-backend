@@ -163,7 +163,7 @@ public class UserService {
         if (userInfo.getAccessRange() != null) user.setAccessRange(userInfo.getAccessRange());
         if (userInfo.getIsEmailAgreed() != null) user.setEmailAgreed(userInfo.getIsEmailAgreed());
         if (userInfo.getIsPushAgreed() != null) user.setPushAgreed(userInfo.getIsPushAgreed());
-        if (userInfo.getIsSmsAgreed() != null) user.setSmsAgreed(userInfo.getIsPushAgreed());
+        if (userInfo.getIsSmsAgreed() != null) user.setSmsAgreed(userInfo.getIsSmsAgreed());
     }
 
     /**
