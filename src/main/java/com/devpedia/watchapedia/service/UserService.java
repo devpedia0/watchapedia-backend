@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService {
 
+    public static final int FAVORITE_LIST_SIZE = 10;
+
     private final UserRepository userRepository;
     private final ContentService contentService;
     private final PasswordEncoder passwordEncoder;
@@ -293,5 +295,77 @@ public class UserService {
         return interests.stream()
                 .map(i -> ContentDto.MainListItem.of(contentService.initializeAndUnproxy(i.getContent()), null))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 유저 취향분석 정보를 반환한다. 내용은
+     * - 유저 평가정보 (컨텐츠 별 개수, 총 개수, 평균 점수, 많이 준 평점, 평점 분포)
+     * - 영화 선호 (태그, 배우, 감독, 국가, 카테고리, 감상 시간)
+     * - 책 선호 (태그, 작가)
+     * @param targetId 조회 대상 유저
+     * @param tokenId 토큰 정보
+     * @return 유저 취향분석 정보
+     */
+    public UserDto.UserAnalysisData getUserAnalysis(Long targetId, Long tokenId) {
+        if (isAccessNotAvailable(targetId, tokenId))
+            throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
+
+        User user = userRepository.findById(targetId);
+
+        UserDto.UserRatingAnalysis ratingAnalysis = userRepository.getRatingAnalysis(targetId);
+        UserDto.UserMovieAnalysis movieAnalysis = getMovieAnalysis(targetId);
+        UserDto.UserBookAnalysis bookAnalysis = getBookAnalysis(targetId);
+
+        return UserDto.UserAnalysisData.builder()
+                .userName(user.getName())
+                .rating(ratingAnalysis)
+                .movie(movieAnalysis)
+                .book(bookAnalysis)
+                .build();
+    }
+
+    /**
+     * 영화 선호 정보를 반환한다. 내용은
+     * - 선호 태그
+     * - 선호 배우, 감독
+     * - 선호 국가
+     * - 선호 카테고리
+     * - 총 영화 감상 시간
+     * @param userId 조회 대상 유저
+     * @return 영화 선호 정보
+     */
+    private UserDto.UserMovieAnalysis getMovieAnalysis(Long userId) {
+        List<UserDto.FavoriteCommon> tags = userRepository.getFavoriteTag(userId, "M", FAVORITE_LIST_SIZE);
+        List<UserDto.FavoriteCommon> countries = userRepository.getFavoriteCountry(userId, FAVORITE_LIST_SIZE);
+        List<UserDto.FavoriteCommon> categories = userRepository.getFavoriteCategory(userId, "M", FAVORITE_LIST_SIZE);
+        List<UserDto.FavoritePerson> actor = userRepository.getFavoritePerson(userId, "M", "배우", FAVORITE_LIST_SIZE);
+        List<UserDto.FavoritePerson> director = userRepository.getFavoritePerson(userId, "M", "감독", FAVORITE_LIST_SIZE);
+        int totalRunningTimeInMinute = userRepository.getTotalRunningTime(userId);
+
+        return UserDto.UserMovieAnalysis.builder()
+                .tag(tags)
+                .country(countries)
+                .category(categories)
+                .actor(actor)
+                .director(director)
+                .totalRunningTimeInMinute(totalRunningTimeInMinute)
+                .build();
+    }
+
+    /**
+     * 책 선호 정보를 반환한다. 내용은
+     * - 선호 태그
+     * - 선호 작가
+     * @param userId 조회 대상 유저
+     * @return 책 선호 정보
+     */
+    private UserDto.UserBookAnalysis getBookAnalysis(Long userId) {
+        List<UserDto.FavoriteCommon> tags = userRepository.getFavoriteTag(userId, "B", FAVORITE_LIST_SIZE);
+        List<UserDto.FavoritePerson> author = userRepository.getFavoritePerson(userId, "B", "저자", FAVORITE_LIST_SIZE);
+
+        return UserDto.UserBookAnalysis.builder()
+                .tag(tags)
+                .author(author)
+                .build();
     }
 }
