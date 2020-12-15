@@ -28,7 +28,7 @@ public class CommonExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     protected ResponseEntity<ErrorResponse> handleBindException(RuntimeException e) {
         e.printStackTrace();
-        String stackTrace = Arrays.stream(e.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.joining(" "));
+        String stackTrace = Arrays.stream(e.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.joining("\n"));
         log.error("{} {} {}",
                 keyValue("exception_stack_trace", stackTrace),
                 keyValue("exception_class", e.getClass().getSimpleName()),
