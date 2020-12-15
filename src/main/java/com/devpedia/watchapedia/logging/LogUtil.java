@@ -1,7 +1,6 @@
 package com.devpedia.watchapedia.logging;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,19 +19,17 @@ import static net.logstash.logback.argument.StructuredArguments.entries;
 @RequiredArgsConstructor
 public class LogUtil {
 
-    private final ObjectMapper mapper;
-
-    public void logApi(HttpServletRequest request, HttpServletResponse response, JsonNode requestBody , JsonNode responseBody) throws Exception{
+    public void logApi(HttpServletRequest request, HttpServletResponse response, JsonNode requestBody , JsonNode responseBody) {
         Map<String, Object> logs = new HashMap<>();
 
         logs.put("request_method", request.getMethod());
         logs.put("request_url", request.getRequestURI());
         logs.put("request_headers", buildHeadersMap(request));
         logs.put("request_parameters", buildParametersMap(request));
-        logs.put("request_body", mapper.writeValueAsString(requestBody));
+        logs.put("request_body", requestBody.toPrettyString());
         logs.put("response_status", response.getStatus());
         logs.put("response_headers", buildHeadersMap(response));
-        logs.put("response_body", mapper.writeValueAsString(responseBody));
+        logs.put("response_body", responseBody.toPrettyString());
 
         if (responseBody.has("status") && responseBody.has("code"))
             logs.put("response_error_code", responseBody.get("code").textValue());

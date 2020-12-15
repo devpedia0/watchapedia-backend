@@ -42,8 +42,9 @@
                         { "serviceID": "watchapedia" }
                     </pattern>
                 </pattern>
-                <arguments fieldName="stackTrace" />
-                <arguments fieldName="exception" />
+                <arguments fieldName="exception_stack_trace" />
+                <arguments fieldName="exception_class" />
+                <arguments fieldName="exception_message" />
                 <timestamp />
                 <context />
                 <threadName />
@@ -57,8 +58,11 @@
 
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
-        <appender-ref ref="LOGSTASH_ERROR" />
     </root>
+
+    <logger name="com.devpedia.watchapedia.exception.handler.CommonExceptionHandler" level="ERROR" additivity="false">
+        <appender-ref ref="LOGSTASH_ERROR" />
+    </logger>
 
     <logger name="com.devpedia.watchapedia.logging.LogUtil" level="INFO" additivity="false">
         <appender-ref ref="LOGSTASH_API" />
