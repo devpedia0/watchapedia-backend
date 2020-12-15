@@ -138,10 +138,11 @@ public class ContentRepository {
      * 해당 컬렉션에 포함되는 컨텐츠를 개수만큼 반환한다.
      * @param tClass 컨텐츠 종류 Class
      * @param collection 컬렉션
+     * @param page 페이지
      * @param size 반환 개수
      * @return 컬렉션에 담긴 컨텐츠 리스트
      */
-    public <T extends Content> List<T> getContentsInCollection(Class<T> tClass, Collection collection, int size) {
+    public <T extends Content> List<T> getContentsInCollection(Class<T> tClass, Collection collection, int page, int size) {
         return em.createQuery(
                 "select m " +
                         "from CollectionContent cc " +
@@ -149,6 +150,7 @@ public class ContentRepository {
                         "join " +  tClass.getSimpleName() + " m on m.id = c.id " +
                         "where cc.collection.id = :id", tClass)
                 .setParameter("id", collection.getId())
+                .setFirstResult((page - 1) * size)
                 .setMaxResults(size)
                 .getResultList();
     }

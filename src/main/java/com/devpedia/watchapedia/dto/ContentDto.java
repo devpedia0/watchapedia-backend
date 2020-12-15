@@ -120,4 +120,69 @@ public class ContentDto {
         private String title;
         private List<AwardItem> list;
     }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CollectionDetail {
+        private String userName;
+        private String title;
+        private String description;
+        private Integer contentCount;
+        private List<CollectionItem> list;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CollectionItem {
+        private Long id;
+        private String posterImagePath;
+        private String mainTitle;
+        private Boolean isWatchaContent;
+        private Boolean isNetflixContent;
+        private Double score;
+        private String type;
+
+        public CollectionItem(Movie movie, Double score) {
+            this.id = movie.getId();
+            this.posterImagePath = UrlUtil.getCloudFrontUrl(movie.getPosterImage().getPath());
+            this.mainTitle = movie.getMainTitle();
+            this.isWatchaContent = movie.getIsWatchaContent();
+            this.isNetflixContent = movie.getIsNetflixContent();
+            this.score = score;
+            this.type = "M";
+        }
+
+        public CollectionItem(TvShow tvShow, Double score) {
+            this.id = tvShow.getId();
+            this.posterImagePath = UrlUtil.getCloudFrontUrl(tvShow.getPosterImage().getPath());
+            this.mainTitle = tvShow.getMainTitle();
+            this.isWatchaContent = tvShow.getIsWatchaContent();
+            this.isNetflixContent = tvShow.getIsNetflixContent();
+            this.score = score;
+            this.type = "S";
+        }
+
+        public CollectionItem(Book book, Double score) {
+            this.id = book.getId();
+            this.posterImagePath = UrlUtil.getCloudFrontUrl(book.getPosterImage().getPath());
+            this.mainTitle = book.getMainTitle();
+            this.isWatchaContent = null;
+            this.isNetflixContent = null;
+            this.score = score;
+            this.type = "B";
+        }
+
+        public static <T extends Content> CollectionItem of(T content, Double score) {
+            if (content instanceof Movie) return new CollectionItem((Movie) content, score);
+            else if (content instanceof Book) return new CollectionItem((Book) content, score);
+            else return new CollectionItem((TvShow) content, score);
+        }
+    }
+
 }

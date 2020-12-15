@@ -5,6 +5,7 @@ import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.enums.ImageCategory;
 import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.ParticipantDto;
+import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.InvalidFileException;
 import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
@@ -34,6 +35,8 @@ public class ContentService {
     private static final String LIST_TYPE_TAG = "tag";
     private static final String LIST_TYPE_COLLECTION = "collection";
     private static final String LIST_TYPE_AWARD = "award";
+
+    private static final Long AWARD_ADMIN_ID = 1L;
 
     private final S3Service s3Service;
     private final ContentRepository contentRepository;
@@ -211,7 +214,7 @@ public class ContentService {
      */
     public <T extends Content> ContentDto.MainListForCollection getCollectionList(Class<T> tClass, Collection collection,
                                                                                   int size) {
-        List<T> collectionMovies = contentRepository.getContentsInCollection(tClass, collection, size);
+        List<T> collectionMovies = contentRepository.getContentsInCollection(tClass, collection, 1, size);
         return ContentDto.MainListForCollection.builder()
                 .type(LIST_TYPE_COLLECTION)
                 .id(collection.getId())
@@ -258,7 +261,7 @@ public class ContentService {
 
         List<ContentDto.AwardItem> items = new ArrayList<>();
         for (Collection collection : awardCollection) {
-            List<T> contentsInCollection = contentRepository.getContentsInCollection(tClass, collection, 4);
+            List<T> contentsInCollection = contentRepository.getContentsInCollection(tClass, collection, 1, 4);
             items.add(new ContentDto.AwardItem(collection, contentsInCollection));
         }
         ContentDto.ListForAward awardList = ContentDto.ListForAward.builder()
@@ -296,5 +299,60 @@ public class ContentService {
             entity = (T) ((HibernateProxy) entity).getHibernateLazyInitializer().getImplementation();
 
         return entity;
+    }
+
+    /**
+     * 왓챠피디아 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
+     * @param id 컬렉션 아이디
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 컬렉션 상세 정보 및 컨텐츠 리스트
+     */
+    public ContentDto.MainList getAwardDetail(Long id, int page, int size) {
+        Collection collection = collectionRepository.findById(id);
+        if (collection == null || !collection.getUser().getId().equals(AWARD_ADMIN_ID))
+            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+
+        List<Content> contents = contentRepository.getContentsInCollection(Content.class, collection, page, size);
+        return ContentDto.MainList.builder()
+                .type(LIST_TYPE_AWARD)
+                .title(collection.getTitle())
+                .list(getContentsWithScore(contents))
+                .build();
+    }
+
+    /**
+     * 유저 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
+     * @param id 컬렉션 아이디
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 컬렉션 상세 정보 및 컨텐츠 리스트
+     */
+    public ContentDto.CollectionDetail getCollectionDetail(Long id, int page, int size) {
+        Collection collection = collectionRepository.findById(id);
+        if (collection == null)
+            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+
+        Integer contentCount = collectionRepository.getContentCount(collection.getId());
+        List<Content> contents = contentRepository.getContentsInCollection(Content.class, collection, page, size);
+        return ContentDto.CollectionDetail.builder()
+                .userName(collection.getUser().getName())
+                .title(collection.getTitle())
+                .description(collection.getDescription())
+                .contentCount(contentCount)
+                .list(getCollectionContentsWithScore(contents))
+                .build();
+    }
+
+    /**
+     * 주어진 컨텐츠에 평균 평점을 Set 해서 반환한다.
+     * @param contents 컨텐츠 리스트
+     * @return 평균 평점이 포함된 리스트
+     */
+    public <T extends Content> List<ContentDto.CollectionItem> getCollectionContentsWithScore(List<T> contents) {
+        Map<Long, Double> contentScore = getContentScore(contents);
+        return contents.stream()
+                .map(content -> ContentDto.CollectionItem.of(content, contentScore.get(content.getId())))
+                .collect(Collectors.toList());
     }
 }
