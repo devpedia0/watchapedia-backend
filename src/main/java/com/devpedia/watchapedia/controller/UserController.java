@@ -306,4 +306,20 @@ public class UserController {
                 new UserDto.InterestContentParameter(contentType, InterestState.WATCHING, order, page, size);
         return userService.getContentByInterest(targetId, tokenId, parameter);
     }
+
+    /**
+     * 유저 취향분석 정보를 반환한다. 내용은
+     * - 유저 평가정보 (컨텐츠 별 개수, 총 개수, 평균 점수, 많이 준 평점, 평점 분포)
+     * - 영화 선호 (태그, 배우, 감독, 국가, 카테고리, 감상 시간)
+     * - 책 선호 (태그, 작가)
+     * 보다 자세한 필드정보는 DTO 참조할 것.
+     * @param targetId 조회 대상 유저
+     * @param principal 토큰 정보
+     * @return 유저 취향분석 정보
+     */
+    @GetMapping("/users/{id}/analysis")
+    public UserDto.UserAnalysisData getUserAnalysis(@PathVariable("id") Long targetId, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        return userService.getUserAnalysis(targetId, tokenId);
+    }
 }

@@ -6,19 +6,19 @@ import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.UserDto;
 import com.devpedia.watchapedia.dto.enums.InterestContentOrder;
 import com.devpedia.watchapedia.dto.enums.RatingContentOrder;
+import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.*;
+import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
@@ -241,5 +241,246 @@ public class UserRepository {
                 .setMaxResults(size);
 
         return query.getResultList();
+    }
+
+    /**
+     * 유저 평점 분석 정보를 반환한다. 구성은
+     * - 총 평점 개수
+     * - 컨텐츠 별 평점 개수 (영화, 책, 티비)
+     * - 평점 평균
+     * - 많이 준 평점
+     * - 평점 별 분포
+     * @param id 조회 대상 유저 ID
+     * @return 유저 평점 분석 정보
+     */
+    public UserDto.UserRatingAnalysis getRatingAnalysis(Long id) {
+        String sql =
+                "select t.*, " +
+                "       (select case greatest(t.`0.5`, t.`1.0`, t.`1.5`, t.`2.0`, " +
+                "                             t.`2.5`, t.`3.0`, t.`3.5`, t.`4.0`, " +
+                "                             t.`4.5`, t.`5.0`) " +
+                "                when t.`0.5` then 0.5 " +
+                "                when t.`1.0` then 1.0 " +
+                "                when t.`1.5` then 1.5 " +
+                "                when t.`2.0` then 2.0 " +
+                "                when t.`2.5` then 2.5 " +
+                "                when t.`3.0` then 3.0 " +
+                "                when t.`3.5` then 3.5 " +
+                "                when t.`4.0` then 4.0 " +
+                "                when t.`4.5` then 4.5 " +
+                "                when t.`5.0` then 5.0 " +
+                "               end) as most " +
+                "from (select count(*) as total, " +
+                "             count(case when c.dtype = 'M' then 1 end) as movie, " +
+                "             count(case when c.dtype = 'B' then 1 end) as book, " +
+                "             count(case when c.dtype = 'S' then 1 end) as tv_show, " +
+                "             avg(s.score) as average, " +
+                "             count(case when s.score = 0.5 then 1 end) as \"0.5\", " +
+                "             count(case when s.score = 1.0 then 1 end) as \"1.0\", " +
+                "             count(case when s.score = 1.5 then 1 end) as \"1.5\", " +
+                "             count(case when s.score = 2.0 then 1 end) as \"2.0\", " +
+                "             count(case when s.score = 2.5 then 1 end) as \"2.5\", " +
+                "             count(case when s.score = 3.0 then 1 end) as \"3.0\", " +
+                "             count(case when s.score = 3.5 then 1 end) as \"3.5\", " +
+                "             count(case when s.score = 4.0 then 1 end) as \"4.0\", " +
+                "             count(case when s.score = 4.5 then 1 end) as \"4.5\", " +
+                "             count(case when s.score = 5.0 then 1 end) as \"5.0\" " +
+                "      from score s " +
+                "      join content c on c.content_id = s.content_id " +
+                "      where user_id = :id) as t";
+
+        Object[] result = (Object[]) em.createNativeQuery(sql)
+                .setParameter("id", id)
+                .getSingleResult();
+
+        LinkedHashMap<Double, Integer> distribution = new LinkedHashMap<>();
+        for (double d = 0.5; d <= 5.0; d += 0.5) {
+            int objIndex = (int) ((d - 0.5) * 2 + 5);
+            distribution.put(d, ((BigInteger) result[objIndex]).intValue());
+        }
+
+        return UserDto.UserRatingAnalysis.builder()
+                .totalCount(((BigInteger) result[0]).intValue())
+                .movieCount(((BigInteger) result[1]).intValue())
+                .bookCount(((BigInteger) result[2]).intValue())
+                .tvShowCount(((BigInteger) result[3]).intValue())
+                .average((Double) result[4])
+                .distribution(distribution)
+                .mostRating(((BigDecimal) result[15]).doubleValue())
+                .build();
+    }
+
+    /**
+     * 유저의 직업 별 선호하는 인물 리스트를 구한다.
+     * @param id 조회 대상 유저 ID
+     * @param type 컨텐츠 타입 (M, B, S)
+     * @param job 인물의 직업
+     * @param size 사이즈
+     * @return 선호하는 인물 리스트
+     */
+    public List<UserDto.FavoritePerson> getFavoritePerson(Long id, String type, String job, int size) {
+        List<Object[]> result = em.createQuery(
+                "select p.id, " +
+                        "       i.path, " +
+                        "       p.name, " +
+                        "       c.mainTitle, " +
+                        "       avg(s.score) as score, " +
+                        "       count(cp.participant) " +
+                        "from ContentParticipant cp " +
+                        "join cp.participant p " +
+                        "join cp.content c " +
+                        "join p.profileImage i " +
+                        "join Score s on c.id = s.content.id " +
+                        "and s.user.id = :id " +
+                        "where c.dtype = :type " +
+                        "  and p.job = :job " +
+                        "group by cp.participant " +
+                        "having count(cp.participant) > 1" +
+                        "  and avg(s.score) >= 3.0 " +
+                        "order by score desc, cp.participant.id", Object[].class)
+                .setParameter("id", id)
+                .setParameter("type", type)
+                .setParameter("job", job)
+                .setMaxResults(size)
+                .getResultList();
+
+        return result.stream()
+                .map(obj -> UserDto.FavoritePerson.builder()
+                        .id((Long) obj[0])
+                        .profileImagePath(UrlUtil.getCloudFrontUrl((String) obj[1]))
+                        .name((String) obj[2])
+                        .movieName((String) obj[3])
+                        .score((Double) obj[4])
+                        .count(((Long) obj[5]).intValue())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 유저의 선호하는 태그 리스트를 구한다.
+     * @param id 조회 대상 유저 ID
+     * @param type 컨텐츠 타입 (M, B, S)
+     * @param size 사이즈
+     * @return 선호하는 태그 리스트
+     */
+    public List<UserDto.FavoriteCommon> getFavoriteTag(Long id, String type, int size) {
+        List<Object[]> result = em.createQuery(
+                "select t.description, " +
+                        "       avg(s.score) as score, " +
+                        "       count(ct.tag) as cnt " +
+                        "from ContentTag ct " +
+                        "join ct.tag t " +
+                        "join ct.content c on c.dtype = :type " +
+                        "join Score s on c.id = s.content.id " +
+                        "and s.user.id = :id " +
+                        "group by ct.tag " +
+                        "having count(ct.tag) > 1" +
+                        "  and avg(s.score) >= 3.0 " +
+                        "order by score desc, cnt ", Object[].class)
+                .setParameter("id", id)
+                .setParameter("type", type)
+                .setMaxResults(size)
+                .getResultList();
+
+        return result.stream()
+                .map(obj -> UserDto.FavoriteCommon.builder()
+                        .description((String) obj[0])
+                        .score((Double) obj[1])
+                        .count(((Long) obj[2]).intValue())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 유저의 선호하는 국가 리스트를 구한다.
+     * 현재 영화에 대해서만 가능하다.
+     * @param id 조회 대상 유저 ID
+     * @param size 사이즈
+     * @return 선호하는 국가 리스트
+     */
+    public List<UserDto.FavoriteCommon> getFavoriteCountry(Long id, int size) {
+        List<Object[]> result = em.createQuery(
+                "select m.countryCode, " +
+                        "       avg(s.score) as score, " +
+                        "       count(m.countryCode) as cnt " +
+                        "from Score s " +
+                        "join s.content c " +
+                        "join Movie m on m.id = c.id " +
+                        "where s.user.id = :id " +
+                        "group by m.countryCode " +
+                        "having count(m.countryCode) > 1" +
+                        "  and avg(s.score) >= 3.0 " +
+                        "order by score desc, cnt ", Object[].class)
+                .setParameter("id", id)
+                .setMaxResults(size)
+                .getResultList();
+
+        return result.stream()
+                .map(obj -> UserDto.FavoriteCommon.builder()
+                        .description((String) obj[0])
+                        .score((Double) obj[1])
+                        .count(((Long) obj[2]).intValue())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 유저의 선호하는 카테고리 리스트를 구한다.
+     * 현재 카테고리는 테이블이 분리되어 있지 않고
+     * 한 칼럼에 구분자(/)로 나눠서 들어가 있다.
+     * 따라서 한 컨텐츠에 있는 최대 카테고리 개수(현재는 6)만큼
+     * 구분자(/)로 잘라서 row 로 얻은 다음 처리하고 있음.
+     * @param id 조회 대상 유저 ID
+     * @param type 컨텐츠 타입 (M, B, S)
+     * @param size 사이즈
+     * @return 선호하는 카테고리 리스트
+     */
+    public List<UserDto.FavoriteCommon> getFavoriteCategory(Long id, String type, int size) {
+        List<Object[]> result = em.createNativeQuery(
+                "select substring_index(substring_index(c.category, '/', numbers.n), '/', -1) as categories, " +
+                        "       avg(s.score) as score," +
+                        "       count(c.content_id) as count " +
+                        "from (select 1 n union all select 2 union all " +
+                        "      select 3 union all select 4 union all " +
+                        "      select 5 union all select 6) numbers " +
+                        "join content c " +
+                        "    on c.category != '' " +
+                        "    and c.dtype = :type " +
+                        "    and char_length(c.category) - char_length(replace(c.category, '/', '')) >= numbers.n - 1 " +
+                        "join score s on c.content_id = s.content_id " +
+                        "    and s.user_id = :id " +
+                        "group by categories " +
+                        "having count(c.content_id) > 1 " +
+                        "   and avg(s.score) >= 3.0 " +
+                        "order by score desc, count")
+                .setParameter("id", id)
+                .setParameter("type", type)
+                .setMaxResults(size)
+                .getResultList();
+
+        return result.stream()
+                .map(obj -> UserDto.FavoriteCommon.builder()
+                        .description((String) obj[0])
+                        .score((Double) obj[1])
+                        .count(((BigInteger) obj[2]).intValue())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 유저의 총 영화 감상 시간을 구한다.
+     * 평점을 매긴 작품을 감상한 것으로 본다.
+     * @param userId 조회 대상 유저 ID
+     * @return 총 영화 감상 시간
+     */
+    public int getTotalRunningTime(Long userId) {
+        return em.createQuery(
+                "select sum(m.runningTimeInMinutes) " +
+                        "from Score s " +
+                        "join Movie m on s.content = m " +
+                        "where s.user.id = :id", Long.class)
+                .setParameter("id", userId)
+                .getSingleResult()
+                .intValue();
     }
 }
