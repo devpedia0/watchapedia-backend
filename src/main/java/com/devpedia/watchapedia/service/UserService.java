@@ -10,6 +10,7 @@ import com.devpedia.watchapedia.exception.ValueDuplicatedException;
 import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.exception.common.ErrorField;
+import com.devpedia.watchapedia.repository.ContentRepository;
 import com.devpedia.watchapedia.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -28,7 +29,7 @@ public class UserService {
     public static final int FAVORITE_LIST_SIZE = 10;
 
     private final UserRepository userRepository;
-    private final ContentService contentService;
+    private final ContentRepository contentRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -244,7 +245,7 @@ public class UserService {
         }
 
         for (Score score : scores) {
-            Content content = contentService.initializeAndUnproxy(score.getContent());
+            Content content = contentRepository.initializeAndUnproxy(score.getContent());
             result.get(score.getScore()).getList().add(ContentDto.MainListItem.of(content, score.getScore()));
         }
 
@@ -271,7 +272,7 @@ public class UserService {
                 parameter.getOrder(), parameter.getPage(), parameter.getSize());
 
         return scores.stream()
-                .map(s -> ContentDto.MainListItem.of(contentService.initializeAndUnproxy(s.getContent()), s.getScore()))
+                .map(s -> ContentDto.MainListItem.of(contentRepository.initializeAndUnproxy(s.getContent()), s.getScore()))
                 .collect(Collectors.toList());
     }
 
@@ -293,7 +294,7 @@ public class UserService {
                 parameter.getOrder(), parameter.getPage(), parameter.getSize());
 
         return interests.stream()
-                .map(i -> ContentDto.MainListItem.of(contentService.initializeAndUnproxy(i.getContent()), null))
+                .map(i -> ContentDto.MainListItem.of(contentRepository.initializeAndUnproxy(i.getContent()), null))
                 .collect(Collectors.toList());
     }
 
@@ -367,5 +368,38 @@ public class UserService {
                 .tag(tags)
                 .author(author)
                 .build();
+    }
+
+    /**
+     * 유저를 이름으로 검색한 뒤 해당 유저들의
+     * 평점, 코멘트, 보고싶어요, 보는중, 관심없음 개수를 담아서
+     * 검색 결과 DTO 로 반환한다.
+     * @param query 검색어(user.name)
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 유저 검색 결과
+     */
+    public List<UserDto.SearchUserItem> getUserSearchList(String query, int page, int size) {
+        List<User> users = userRepository.findByName(query, page, size);
+        Map<Long, UserDto.ActionCounts> actionCountsMap = userRepository.getActionCounts(getUserIds(users));
+        return users.stream()
+                .map(user -> UserDto.SearchUserItem.builder()
+                        .id(user.getId())
+                        .name(user.getName())
+                        .description(user.getDescription())
+                        .counts(actionCountsMap.get(user.getId()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 유저 리스트에서 각 유저의 ID 를 추출한다.
+     * @param users 유저
+     * @return 유저 ID Set
+     */
+    private Set<Long> getUserIds(List<User> users) {
+        return users.stream()
+                .map(User::getId)
+                .collect(Collectors.toSet());
     }
 }

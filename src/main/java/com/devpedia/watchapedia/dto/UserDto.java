@@ -257,4 +257,16 @@ public class UserDto {
         private Double score;
         private Integer count;
     }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SearchUserItem {
+        private Long id;
+        private String name;
+        private String description;
+        private ActionCounts counts;
+    }
 }
