@@ -3,10 +3,10 @@ package com.devpedia.watchapedia.controller;
 import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.repository.ContentRepository;
 import com.devpedia.watchapedia.service.ContentService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,5 +41,53 @@ public class ContentController {
     @GetMapping("/public/contents/trending_words")
     public List<String> getTrendingWords() {
         return contentRepository.getTrendingWords(50, 5);
+    }
+
+    /**
+     * 왓챠피디아 컬렉션 상세 내역 조회.
+     * @param id 컬렉션 아이디
+     * @param size 최초 컨텐츠 목록 사이즈
+     * @return 컬렉션 정보 및 컨텐츠 리스트
+     */
+    @GetMapping("/public/awards/{id}")
+    public ContentDto.MainList getStaffMadeInfo(@PathVariable Long id, @RequestParam @Min(1)@Max(20) int size) {
+        return contentService.getAwardDetail(id, 1, size);
+    }
+
+    /**
+     * 왓챠피디아 컬렉션 내의 컨텐츠 조회.
+     * @param id 컬렉션 아이디
+     * @param size 사이즈
+     * @return 컬렉션 컨텐츠 리스트
+     */
+    @GetMapping("/public/awards/{id}/contents")
+    public List<ContentDto.MainListItem> getStaffMadeContents(@PathVariable Long id,
+                                                              @RequestParam @Positive int page,
+                                                              @RequestParam @Min(1)@Max(20) int size) {
+        return contentService.getAwardDetail(id, page, size).getList();
+    }
+
+    /**
+     * 유저 컬렉션 상세 내역 조회.
+     * @param id 컬렉션 아이디
+     * @param size 최초 컨텐츠 목록 사이즈
+     * @return 컬렉션 정보 및 컨텐츠 리스트
+     */
+    @GetMapping("/public/collections/{id}")
+    public ContentDto.CollectionDetail getCollectionInfo(@PathVariable Long id, @RequestParam @Min(1)@Max(20) int size) {
+        return contentService.getCollectionDetail(id, 1, size);
+    }
+
+    /**
+     * 왓챠피디아 유저 내의 컨텐츠 조회.
+     * @param id 컬렉션 아이디
+     * @param size 사이즈
+     * @return 컬렉션 컨텐츠 리스트
+     */
+    @GetMapping("/public/collections/{id}/contents")
+    public List<ContentDto.CollectionItem> getCollectionContents(@PathVariable Long id,
+                                                               @RequestParam @Positive int page,
+                                                               @RequestParam @Min(1)@Max(20) int size) {
+        return contentService.getCollectionDetail(id, page, size).getList();
     }
 }

@@ -54,4 +54,28 @@ public class CollectionRepository {
                 .setParameter("type", type)
                 .getResultList();
     }
+
+    /**
+     * PK 로 해당 컬렉션을 조회한다.
+     * @param id 컬렉션 아이디
+     * @return 컬렉션
+     */
+    public Collection findById(Long id) {
+        return em.find(Collection.class, id);
+    }
+
+    /**
+     * 컬렉션에 포함된 총 컨텐츠 개수를 구한다.
+     * @param id 컬렉션 아이디
+     * @return 컨텐츠 개수
+     */
+    public Integer getContentCount(Long id) {
+        return em.createQuery(
+                "select count(cc.content) " +
+                        "from CollectionContent cc " +
+                        "where cc.id = :id", Long.class)
+                .setParameter("id", id)
+                .getSingleResult()
+                .intValue();
+    }
 }
