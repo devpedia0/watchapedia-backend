@@ -4,6 +4,8 @@ import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -182,6 +184,102 @@ public class ContentDto {
             if (content instanceof Movie) return new CollectionItem((Movie) content, score);
             else if (content instanceof Book) return new CollectionItem((Book) content, score);
             else return new CollectionItem((TvShow) content, score);
+        }
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SearchResult {
+        private List<Object> topResults;
+        private List<Object> movies;
+        private List<Object> books;
+        private List<Object> tvShows;
+        private List<UserDto.SearchUserItem> users;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SearchMovieItem {
+        private Long id;
+        private String posterImagePath;
+        private String mainTitle;
+        private LocalDate productionDate;
+        private String countryCode;
+        private Boolean isWatchaContent;
+        private Boolean isNetflixContent;
+        private String dtype;
+
+        public static SearchMovieItem of(Movie movie) {
+            return SearchMovieItem.builder()
+                    .id(movie.getId())
+                    .posterImagePath(UrlUtil.getCloudFrontUrl(movie.getPosterImage().getPath()))
+                    .mainTitle(movie.getMainTitle())
+                    .productionDate(movie.getProductionDate())
+                    .countryCode(movie.getCountryCode())
+                    .isWatchaContent(movie.getIsWatchaContent())
+                    .isNetflixContent(movie.getIsNetflixContent())
+                    .dtype(movie.getDtype())
+                    .build();
+        }
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SearchTvShowItem {
+        private Long id;
+        private String posterImagePath;
+        private String mainTitle;
+        private LocalDate productionDate;
+        private String countryCode;
+        private Boolean isWatchaContent;
+        private Boolean isNetflixContent;
+        private String dtype;
+
+        public static SearchTvShowItem of(TvShow tvShow) {
+            return SearchTvShowItem.builder()
+                    .id(tvShow.getId())
+                    .posterImagePath(UrlUtil.getCloudFrontUrl(tvShow.getPosterImage().getPath()))
+                    .mainTitle(tvShow.getMainTitle())
+                    .productionDate(tvShow.getProductionDate())
+                    .countryCode(tvShow.getCountryCode())
+                    .isWatchaContent(tvShow.getIsWatchaContent())
+                    .isNetflixContent(tvShow.getIsNetflixContent())
+                    .dtype(tvShow.getDtype())
+                    .build();
+        }
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SearchBookItem {
+        private Long id;
+        private String posterImagePath;
+        private String mainTitle;
+        private LocalDate productionDate;
+        private String author;
+        private String dtype;
+
+        public static SearchBookItem of(Book book) {
+            return SearchBookItem.builder()
+                    .id(book.getId())
+                    .posterImagePath(UrlUtil.getCloudFrontUrl(book.getPosterImage().getPath()))
+                    .mainTitle(book.getMainTitle())
+                    .productionDate(book.getProductionDate())
+                    .author(book.getParticipants().get(0).getParticipant().getName())
+                    .dtype(book.getDtype())
+                    .build();
         }
     }
 

@@ -322,4 +322,18 @@ public class UserController {
         Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
         return userService.getUserAnalysis(targetId, tokenId);
     }
+
+    /**
+     * 유저 검색 결과를 반환한다.
+     * @param query 검색어
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 유저 검색 결과
+     */
+    @GetMapping("/public/searches/users")
+    public List<UserDto.SearchUserItem> search(@RequestParam @NotBlank String query,
+                                               @RequestParam @Positive int page,
+                                               @RequestParam @Min(1)@Max(20) int size) {
+        return userService.getUserSearchList(query, page, size);
+    }
 }

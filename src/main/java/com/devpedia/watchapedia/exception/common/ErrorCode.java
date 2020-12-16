@@ -15,6 +15,7 @@ public enum ErrorCode {
 
     // B: IO Fail
     OAUTH_PROVIDER_FAIL(BAD_REQUEST, "B001", "OAuth인증에 실패했습니다"),
+    ELASTIC_SEARCH_FAIL(BAD_REQUEST, "B001", "ElasticSearch 오류 발생"),
 
     // C: Client error
     INPUT_VALUE_INVALID(BAD_REQUEST, "C001", "적절하지 않은 입력값이 있습니다"),

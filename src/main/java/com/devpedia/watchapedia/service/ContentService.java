@@ -5,22 +5,20 @@ import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.enums.ImageCategory;
 import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.ParticipantDto;
+import com.devpedia.watchapedia.dto.UserDto;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.InvalidFileException;
 import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
-import com.devpedia.watchapedia.repository.CollectionRepository;
-import com.devpedia.watchapedia.repository.ContentRepository;
-import com.devpedia.watchapedia.repository.ParticipantRepository;
-import com.devpedia.watchapedia.repository.TagRepository;
+import com.devpedia.watchapedia.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
-import org.hibernate.proxy.HibernateProxy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,19 +28,26 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ContentService {
 
-    private static final String LIST_TYPE_SCORE = "score";
-    private static final String LIST_TYPE_POPULAR = "people";
-    private static final String LIST_TYPE_TAG = "tag";
-    private static final String LIST_TYPE_COLLECTION = "collection";
-    private static final String LIST_TYPE_AWARD = "award";
+    public static final String LIST_TYPE_SCORE = "score";
+    public static final String LIST_TYPE_POPULAR = "people";
+    public static final String LIST_TYPE_TAG = "tag";
+    public static final String LIST_TYPE_COLLECTION = "collection";
+    public static final String LIST_TYPE_AWARD = "award";
+    public static final Long AWARD_ADMIN_ID = 1L;
 
-    private static final Long AWARD_ADMIN_ID = 1L;
+    public static final int SEARCH_RESULT_LIST_PAGE = 1;
+    public static final int SEARCH_RESULT_LIST_SIZE = 9;
+
+
+
 
     private final S3Service s3Service;
+    private final UserService userService;
     private final ContentRepository contentRepository;
     private final ParticipantRepository participantRepository;
     private final TagRepository tagRepository;
     private final CollectionRepository collectionRepository;
+    private final ElasticSearchRepository searchRepository;
 
     /**
      * 컨텐츠와 컨텐츠에 해당하는 태그, 인물, 갤러리 등을 저장한다.
@@ -286,22 +291,6 @@ public class ContentService {
     }
 
     /**
-     * 프록시(HibernateProxy) 객체를 실제 컨텐츠 엔티티로 언프록시 한다
-     * @param entity unproxy 할 컨텐츠 엔티티
-     * @return unproxy 된 컨텐츠 엔티티
-     */
-    public <T extends Content> T initializeAndUnproxy(T entity) {
-        if (entity == null) throw new NullPointerException("Entity passed for initialization is null");
-
-        Hibernate.initialize(entity);
-
-        if (entity instanceof HibernateProxy)
-            entity = (T) ((HibernateProxy) entity).getHibernateLazyInitializer().getImplementation();
-
-        return entity;
-    }
-
-    /**
      * 왓챠피디아 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
      * @param id 컬렉션 아이디
      * @param page 페이지
@@ -354,5 +343,68 @@ public class ContentService {
         return contents.stream()
                 .map(content -> ContentDto.CollectionItem.of(content, contentScore.get(content.getId())))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 통합 검색 결과를 반환한다.
+     * - 상위 검색 결과
+     * - 영화
+     * - 티비쇼
+     * - 책
+     * - 유저
+     * @param query 검색어
+     * @return 통합 검색 결과
+     */
+    public ContentDto.SearchResult getSearchResult(String query) throws IOException {
+        Map<String, List<Long>> ids = searchRepository.searchAllContentsReturnIds(query, SEARCH_RESULT_LIST_PAGE, SEARCH_RESULT_LIST_SIZE);
+        List<Object> topList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TOP_RESULT));
+        List<Object> movieList = getSearchList(ids.get(ElasticSearchRepository.TYPE_MOVIE));
+        List<Object> tvShowList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TV_SHOW));
+        List<Object> bookList = getSearchList(ids.get(ElasticSearchRepository.TYPE_BOOK));
+        List<UserDto.SearchUserItem> userList = userService.getUserSearchList(query, SEARCH_RESULT_LIST_PAGE, SEARCH_RESULT_LIST_SIZE);
+
+        return ContentDto.SearchResult.builder()
+                .topResults(topList)
+                .movies(movieList)
+                .tvShows(tvShowList)
+                .books(bookList)
+                .users(userList)
+                .build();
+    }
+
+    /**
+     * 컨텐츠 타입 별 검색 결과를 반환한다.
+     * @param typeParameter 컨텐츠 타입 Enum
+     * @param query 검색어
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 검색 결과
+     */
+    public List<Object> searchByType(ContentTypeParameter typeParameter, String query, int page, int size) throws IOException {
+        List<Long> ids = searchRepository.searchTypeContentsReturnIds(typeParameter.getDtype(), query, page, size);
+        return getSearchList(ids);
+    }
+
+    /**
+     * 컨텐츠의 ID 리스트를 인자로 받아서
+     * 해당 컨텐츠를 조회 후 컨텐츠 타입 별로
+     * 알맞은 DTO 형태로 변환해서 반환한다.
+     * @param ids 컨텐츠 ID 리스트
+     * @return 검색 결과 DTO 리스트(SearchMovieItem, SearchTvShowItem, SearchBookItem)
+     */
+    private List<Object> getSearchList(List<Long> ids) {
+        List<Content> contents = contentRepository.findListIn(Content.class, new HashSet<>(ids));
+        List<Object> result = new ArrayList<>();
+
+        for (Content content : contents) {
+            if (content instanceof Movie)
+                result.add(ContentDto.SearchMovieItem.of((Movie) content));
+            else if (content instanceof TvShow)
+                result.add(ContentDto.SearchTvShowItem.of((TvShow) content));
+            else if (content instanceof Book)
+                result.add(ContentDto.SearchBookItem.of((Book) content));
+        }
+
+        return result;
     }
 }

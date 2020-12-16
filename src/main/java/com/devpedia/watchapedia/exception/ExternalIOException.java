@@ -4,6 +4,10 @@ import com.devpedia.watchapedia.exception.common.BusinessException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 
 public class ExternalIOException extends BusinessException {
+    public ExternalIOException(ErrorCode errorCode) {
+        super(errorCode);
+    }
+
     public ExternalIOException(ErrorCode errorCode, String message) {
         super(errorCode, message);
     }
