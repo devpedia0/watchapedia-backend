@@ -4,6 +4,8 @@ import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.dto.ContentDto;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.Hibernate;
+import org.hibernate.proxy.HibernateProxy;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
@@ -186,5 +188,21 @@ public class ContentRepository {
                 .setParameter("range", range)
                 .setMaxResults(size)
                 .getResultList();
+    }
+
+    /**
+     * 프록시(HibernateProxy) 객체를 실제 컨텐츠 엔티티로 언프록시 한다
+     * @param entity unproxy 할 컨텐츠 엔티티
+     * @return unproxy 된 컨텐츠 엔티티
+     */
+    public <T extends Content> T initializeAndUnproxy(T entity) {
+        if (entity == null) throw new NullPointerException("Entity passed for initialization is null");
+
+        Hibernate.initialize(entity);
+
+        if (entity instanceof HibernateProxy)
+            entity = (T) ((HibernateProxy) entity).getHibernateLazyInitializer().getImplementation();
+
+        return entity;
     }
 }

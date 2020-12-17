@@ -16,6 +16,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.*;
+import javax.swing.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
@@ -482,5 +483,56 @@ public class UserRepository {
                 .setParameter("id", userId)
                 .getSingleResult()
                 .intValue();
+    }
+
+    /**
+     * 이름으로 유저를 찾아서 반환한다.
+     * @param name 검색할 이름
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 검색된 유저 리스트
+     */
+    public List<User> findByName(String name, int page, int size) {
+        return em.createQuery(
+                "select u " +
+                        "from User u " +
+                        "where u.name like :name", User.class)
+                .setParameter("name", "%" + name + "%")
+                .setFirstResult((page - 1) * size)
+                .setMaxResults(size)
+                .getResultList();
+    }
+
+    /**
+     * 해당 ID 유저의 전체 컨텐츠의
+     * 평점, 코멘트, 보고싶어요, 보는중, 관심없음 개수를 구한다.
+     * @param ids 검색 유저 ID Set
+     * @return 유저 ID 별 ActionCounts
+     */
+    public Map<Long, UserDto.ActionCounts> getActionCounts(Set<Long> ids) {
+        List<Object[]> result = em.createNativeQuery(
+                "select u.user_id, " +
+                        "       (select count(user_id) from score where user_id = u.user_id) as score, " +
+                        "       (select count(user_id) from comment where user_id = u.user_id) as comment, " +
+                        "       count(case when i.state = 1 then 1 end) as wishCount, " +
+                        "       count(case when i.state = 2 then 1 end) as watchingCount, " +
+                        "       count(case when i.state = 3 then 1 end) as notInterestCount " +
+                        "from user u " +
+                        "join interest i on u.user_id = i.user_id " +
+                        "where u.user_id in :ids " +
+                        "group by u.user_id")
+                .setParameter("ids", ids)
+                .getResultList();
+
+        return result.stream()
+                .collect(Collectors.toMap(
+                        o -> ((BigInteger) o[0]).longValue(),
+                        o -> UserDto.ActionCounts.builder()
+                                .ratingCount(((BigInteger) o[1]).intValue())
+                                .commentCount(((BigInteger) o[2]).intValue())
+                                .wishCount(((BigInteger) o[3]).intValue())
+                                .watchingCount(((BigInteger) o[4]).intValue())
+                                .notInterestCount(((BigInteger) o[5]).intValue())
+                                .build()));
     }
 }

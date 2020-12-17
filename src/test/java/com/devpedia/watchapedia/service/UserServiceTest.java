@@ -268,7 +268,7 @@ class UserServiceTest {
                 .willReturn(user);
 
         // when
-        UserDto.UserInfo userInfo = userService.getUserInfo(1L);
+        UserDto.UserInfo userInfo = userService.getUserInfo(1L, 1L);
 
         // then
         assertThat(userInfo.getEmail()).isEqualTo(user.getEmail());
@@ -290,7 +290,7 @@ class UserServiceTest {
                 .willReturn(null);
 
         // when
-        Throwable throwable = catchThrowable(() -> userService.getUserInfo(1L));
+        Throwable throwable = catchThrowable(() -> userService.getUserInfo(1L, 1L));
 
         // then
         assertThat(throwable).isInstanceOf(EntityNotExistException.class);
