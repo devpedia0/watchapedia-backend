@@ -21,6 +21,5 @@ public enum InterestState {
                 .findAny()
                 // TODO: Add exception
                 .orElseThrow();
-
     }
 }

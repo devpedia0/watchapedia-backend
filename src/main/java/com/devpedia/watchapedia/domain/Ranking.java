@@ -1,4 +1,5 @@
 package com.devpedia.watchapedia.domain;
+import com.devpedia.watchapedia.domain.enums.RankingChartIdState;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

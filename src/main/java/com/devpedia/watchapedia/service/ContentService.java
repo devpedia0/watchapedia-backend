@@ -5,18 +5,20 @@ import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.enums.ImageCategory;
 import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.ParticipantDto;
+import com.devpedia.watchapedia.dto.UserDto;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
+import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.InvalidFileException;
+import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
-import com.devpedia.watchapedia.repository.CollectionRepository;
-import com.devpedia.watchapedia.repository.ContentRepository;
-import com.devpedia.watchapedia.repository.ParticipantRepository;
-import com.devpedia.watchapedia.repository.TagRepository;
+import com.devpedia.watchapedia.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,17 +28,26 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ContentService {
 
-    private static final String LIST_TYPE_SCORE = "score";
-    private static final String LIST_TYPE_POPULAR = "people";
-    private static final String LIST_TYPE_TAG = "tag";
-    private static final String LIST_TYPE_COLLECTION = "collection";
-    private static final String LIST_TYPE_AWARD = "award";
+    public static final String LIST_TYPE_SCORE = "score";
+    public static final String LIST_TYPE_POPULAR = "people";
+    public static final String LIST_TYPE_TAG = "tag";
+    public static final String LIST_TYPE_COLLECTION = "collection";
+    public static final String LIST_TYPE_AWARD = "award";
+    public static final Long AWARD_ADMIN_ID = 1L;
+
+    public static final int SEARCH_RESULT_LIST_PAGE = 1;
+    public static final int SEARCH_RESULT_LIST_SIZE = 9;
+
+
+
 
     private final S3Service s3Service;
+    private final UserService userService;
     private final ContentRepository contentRepository;
     private final ParticipantRepository participantRepository;
     private final TagRepository tagRepository;
     private final CollectionRepository collectionRepository;
+    private final ElasticSearchRepository searchRepository;
 
     /**
      * 컨텐츠와 컨텐츠에 해당하는 태그, 인물, 갤러리 등을 저장한다.
@@ -208,7 +219,7 @@ public class ContentService {
      */
     public <T extends Content> ContentDto.MainListForCollection getCollectionList(Class<T> tClass, Collection collection,
                                                                                   int size) {
-        List<T> collectionMovies = contentRepository.getContentsInCollection(tClass, collection, size);
+        List<T> collectionMovies = contentRepository.getContentsInCollection(tClass, collection, 1, size);
         return ContentDto.MainListForCollection.builder()
                 .type(LIST_TYPE_COLLECTION)
                 .id(collection.getId())
@@ -255,7 +266,7 @@ public class ContentService {
 
         List<ContentDto.AwardItem> items = new ArrayList<>();
         for (Collection collection : awardCollection) {
-            List<T> contentsInCollection = contentRepository.getContentsInCollection(tClass, collection, 4);
+            List<T> contentsInCollection = contentRepository.getContentsInCollection(tClass, collection, 1, 4);
             items.add(new ContentDto.AwardItem(collection, contentsInCollection));
         }
         ContentDto.ListForAward awardList = ContentDto.ListForAward.builder()
@@ -275,6 +286,125 @@ public class ContentService {
     public <T extends Content> String classTypeToString(Class<T> tClass) {
         if (tClass == Movie.class) return "M";
         else if (tClass == Book.class) return "B";
-        else return "S";
+        else if (tClass == TvShow.class) return "S";
+        else throw new ValueNotMatchException(ErrorCode.CONTENT_TYPE_NOT_VALID);
+    }
+
+    /**
+     * 왓챠피디아 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
+     * @param id 컬렉션 아이디
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 컬렉션 상세 정보 및 컨텐츠 리스트
+     */
+    public ContentDto.MainList getAwardDetail(Long id, int page, int size) {
+        Collection collection = collectionRepository.findById(id);
+        if (collection == null || !collection.getUser().getId().equals(AWARD_ADMIN_ID))
+            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+
+        List<Content> contents = contentRepository.getContentsInCollection(Content.class, collection, page, size);
+        return ContentDto.MainList.builder()
+                .type(LIST_TYPE_AWARD)
+                .title(collection.getTitle())
+                .list(getContentsWithScore(contents))
+                .build();
+    }
+
+    /**
+     * 유저 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
+     * @param id 컬렉션 아이디
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 컬렉션 상세 정보 및 컨텐츠 리스트
+     */
+    public ContentDto.CollectionDetail getCollectionDetail(Long id, int page, int size) {
+        Collection collection = collectionRepository.findById(id);
+        if (collection == null)
+            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+
+        Integer contentCount = collectionRepository.getContentCount(collection.getId());
+        List<Content> contents = contentRepository.getContentsInCollection(Content.class, collection, page, size);
+        return ContentDto.CollectionDetail.builder()
+                .userName(collection.getUser().getName())
+                .title(collection.getTitle())
+                .description(collection.getDescription())
+                .contentCount(contentCount)
+                .list(getCollectionContentsWithScore(contents))
+                .build();
+    }
+
+    /**
+     * 주어진 컨텐츠에 평균 평점을 Set 해서 반환한다.
+     * @param contents 컨텐츠 리스트
+     * @return 평균 평점이 포함된 리스트
+     */
+    public <T extends Content> List<ContentDto.CollectionItem> getCollectionContentsWithScore(List<T> contents) {
+        Map<Long, Double> contentScore = getContentScore(contents);
+        return contents.stream()
+                .map(content -> ContentDto.CollectionItem.of(content, contentScore.get(content.getId())))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 통합 검색 결과를 반환한다.
+     * - 상위 검색 결과
+     * - 영화
+     * - 티비쇼
+     * - 책
+     * - 유저
+     * @param query 검색어
+     * @return 통합 검색 결과
+     */
+    public ContentDto.SearchResult getSearchResult(String query) throws IOException {
+        Map<String, List<Long>> ids = searchRepository.searchAllContentsReturnIds(query, SEARCH_RESULT_LIST_PAGE, SEARCH_RESULT_LIST_SIZE);
+        List<Object> topList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TOP_RESULT));
+        List<Object> movieList = getSearchList(ids.get(ElasticSearchRepository.TYPE_MOVIE));
+        List<Object> tvShowList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TV_SHOW));
+        List<Object> bookList = getSearchList(ids.get(ElasticSearchRepository.TYPE_BOOK));
+        List<UserDto.SearchUserItem> userList = userService.getUserSearchList(query, SEARCH_RESULT_LIST_PAGE, SEARCH_RESULT_LIST_SIZE);
+
+        return ContentDto.SearchResult.builder()
+                .topResults(topList)
+                .movies(movieList)
+                .tvShows(tvShowList)
+                .books(bookList)
+                .users(userList)
+                .build();
+    }
+
+    /**
+     * 컨텐츠 타입 별 검색 결과를 반환한다.
+     * @param typeParameter 컨텐츠 타입 Enum
+     * @param query 검색어
+     * @param page 페이지
+     * @param size 사이즈
+     * @return 검색 결과
+     */
+    public List<Object> searchByType(ContentTypeParameter typeParameter, String query, int page, int size) throws IOException {
+        List<Long> ids = searchRepository.searchTypeContentsReturnIds(typeParameter.getDtype(), query, page, size);
+        return getSearchList(ids);
+    }
+
+    /**
+     * 컨텐츠의 ID 리스트를 인자로 받아서
+     * 해당 컨텐츠를 조회 후 컨텐츠 타입 별로
+     * 알맞은 DTO 형태로 변환해서 반환한다.
+     * @param ids 컨텐츠 ID 리스트
+     * @return 검색 결과 DTO 리스트(SearchMovieItem, SearchTvShowItem, SearchBookItem)
+     */
+    private List<Object> getSearchList(List<Long> ids) {
+        List<Content> contents = contentRepository.findListIn(Content.class, new HashSet<>(ids));
+        List<Object> result = new ArrayList<>();
+
+        for (Content content : contents) {
+            if (content instanceof Movie)
+                result.add(ContentDto.SearchMovieItem.of((Movie) content));
+            else if (content instanceof TvShow)
+                result.add(ContentDto.SearchTvShowItem.of((TvShow) content));
+            else if (content instanceof Book)
+                result.add(ContentDto.SearchBookItem.of((Book) content));
+        }
+
+        return result;
     }
 }
