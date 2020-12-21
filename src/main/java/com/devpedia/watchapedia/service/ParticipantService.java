@@ -33,7 +33,6 @@ public class ParticipantService {
         }
 
         Participant participant = request.toEntity(profileImage);
-
         participantRepository.save(participant);
     }
 

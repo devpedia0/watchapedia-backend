@@ -1,5 +1,6 @@
 package com.devpedia.watchapedia.repository;
 
+import com.devpedia.watchapedia.domain.Content;
 import com.devpedia.watchapedia.domain.Participant;
 import com.devpedia.watchapedia.domain.Tag;
 import com.devpedia.watchapedia.domain.User;

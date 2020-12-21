@@ -1,5 +1,6 @@
 package com.devpedia.watchapedia.domain;
 
+import com.devpedia.watchapedia.dto.DetailDto;
 import lombok.*;
 
 import javax.persistence.*;
@@ -32,6 +33,7 @@ public class CommentLike {
         this.user = user;
         this.comment = comment;
     }
+
 
     @Embeddable
     @Data

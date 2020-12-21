@@ -1,6 +1,7 @@
 package com.devpedia.watchapedia.domain;
 
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -34,6 +35,7 @@ public class Reply extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Builder
     public Reply(Comment comment, User user, String description) {
         this.comment = comment;
         this.user = user;

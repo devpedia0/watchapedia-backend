@@ -1,7 +1,5 @@
 package com.devpedia.watchapedia.repository;
 
-import com.devpedia.watchapedia.domain.Collection;
-import com.devpedia.watchapedia.domain.CollectionContent;
 import com.devpedia.watchapedia.domain.User;
 import com.devpedia.watchapedia.dto.UserDto;
 import lombok.RequiredArgsConstructor;
@@ -86,7 +84,6 @@ public class UserRepository {
                 contents.setTvShow(ratingAndWishCount);
             }
         }
-
         return contents;
     }
 }

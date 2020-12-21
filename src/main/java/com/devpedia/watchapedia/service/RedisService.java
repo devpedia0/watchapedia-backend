@@ -24,4 +24,16 @@ public class RedisService {
 
         return jwtTokenProvider.createAccessToken(String.valueOf(userInfo.getId()), userInfo.getRoles());
     }
+
+    /**
+     * 상세페이지 로그인 상태 체크
+     * @param accessToken 유저 엑세스 토큰
+     * @return 유저 아이디 값 반환
+     */
+    public Long getDetailAccessTokenOrThrow(String accessToken) {
+        JwtTokenProvider.JwtParseInfo userInfo = jwtTokenProvider.getUserParseInfo(accessToken);
+        return userInfo.getId();
+    }
+
+
 }

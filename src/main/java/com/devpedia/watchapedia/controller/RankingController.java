@@ -43,8 +43,7 @@ public class RankingController {
      */
     @GetMapping("/public/{chartType}/rankings")
     public List<RankingDto.RankingContentInfoList> getRankingAllList(@PathVariable("chartType") @RankingEnum(enumClass = RankingChartTypeState.class, ignoreCase = true) String chartType){
-        List<RankingDto.RankingContentInfoList> rankingContentInfoLists = rankingService.searchWithAllRanking(chartType);
-        return rankingContentInfoLists;
+        return rankingService.searchWithAllRanking(chartType);
     }
 
 }

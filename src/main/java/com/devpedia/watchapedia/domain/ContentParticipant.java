@@ -1,5 +1,6 @@
 package com.devpedia.watchapedia.domain;
 
+import com.devpedia.watchapedia.dto.DetailDto;
 import lombok.*;
 
 import javax.persistence.*;
@@ -40,4 +41,5 @@ public class ContentParticipant {
     public void setContent(Content content) {
         this.content = content;
     }
+
 }

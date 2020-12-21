@@ -83,6 +83,4 @@ public class ParticipantDto {
                     ? UrlUtil.getCloudFrontUrl(participant.getProfileImage().getPath()) : null;
         }
     }
-
-
 }

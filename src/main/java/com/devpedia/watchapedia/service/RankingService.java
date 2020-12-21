@@ -58,7 +58,6 @@ public class RankingService {
      * @return 랭킹 DTO 리스트 반환
      */
     private List<RankingDto.RankingContentInfoList> setRankingList(List<Ranking> rankings, String chartType){
-        List<RankingDto.RankingContentInfoList> resultRankingInfoList = new ArrayList<>();
         List<Object> rankingListContentsFirst = new ArrayList<>();
         List<Object> rankingListContentsSecond = new ArrayList<>();
         List<Object> rankingListContentsThird = new ArrayList<>();
