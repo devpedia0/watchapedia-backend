@@ -4,8 +4,7 @@ import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
 import com.devpedia.watchapedia.exception.ExternalIOException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
-import com.devpedia.watchapedia.repository.ContentRepository;
-import com.devpedia.watchapedia.repository.ElasticSearchRepository;
+import com.devpedia.watchapedia.repository.content.ContentRepository;
 import com.devpedia.watchapedia.service.ContentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +37,7 @@ public class ContentController {
      */
     @GetMapping("/public/contents/scores/count")
     public Map<String, Long> getTotalScoreCount() {
-        return Map.of("totalCount", contentRepository.getTotalScoreCount());
+        return Map.of("totalCount", contentRepository.countTotalScores());
     }
 
     /**
@@ -48,7 +47,7 @@ public class ContentController {
      */
     @GetMapping("/public/contents/trending_words")
     public List<String> getTrendingWords() {
-        return contentRepository.getTrendingWords(50, 5);
+        return contentRepository.getTrendingWords(5);
     }
 
     /**

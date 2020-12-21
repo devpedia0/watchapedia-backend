@@ -9,11 +9,15 @@ import com.devpedia.watchapedia.dto.UserDto;
 import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.InvalidFileException;
-import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
-import com.devpedia.watchapedia.repository.*;
+import com.devpedia.watchapedia.repository.ElasticSearchRepository;
+import com.devpedia.watchapedia.repository.collection.CollectionRepository;
+import com.devpedia.watchapedia.repository.content.ContentRepository;
+import com.devpedia.watchapedia.repository.participant.ParticipantRepository;
+import com.devpedia.watchapedia.repository.tag.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,12 +38,10 @@ public class ContentService {
     public static final String LIST_TYPE_COLLECTION = "collection";
     public static final String LIST_TYPE_AWARD = "award";
     public static final Long AWARD_ADMIN_ID = 1L;
+    public static final Integer AWARD_POSTER_IMAGE_COUNT = 4;
 
     public static final int SEARCH_RESULT_LIST_PAGE = 1;
     public static final int SEARCH_RESULT_LIST_SIZE = 9;
-
-
-
 
     private final S3Service s3Service;
     private final UserService userService;
@@ -111,7 +113,7 @@ public class ContentService {
         Map<Long, ParticipantDto.ParticipantRole> map = roles.stream()
                 .collect(Collectors.toMap(ParticipantDto.ParticipantRole::getParticipantId, role -> role));
 
-        List<Participant> participants = participantRepository.findListIn(map.keySet());
+        List<Participant> participants = participantRepository.findAllById(map.keySet());
 
         for (Participant participant : participants) {
             ParticipantDto.ParticipantRole role = map.get(participant.getId());
@@ -127,7 +129,7 @@ public class ContentService {
     private void addTags(Content content, List<Long> tags) {
         if (content == null || tags == null) return;
 
-        List<Tag> addedTags = tagRepository.findListIn(new HashSet<>(tags));
+        List<Tag> addedTags = tagRepository.findAllById(tags);
 
         for (Tag tag : addedTags) {
             content.addTag(tag);
@@ -160,66 +162,64 @@ public class ContentService {
 
     /**
      * 해당 컨텐츠 종류 중 특정 평점 이상인 작품을 개수만큼 조회한다.
-     * @param tClass 컨텐츠 종류 Class
+     * @param type 컨텐츠 타입 Enum
      * @param score 기준 평점
      * @param size 반환 개수
      * @return 평점 리스트
      */
-    public <T extends Content> ContentDto.MainList getHighScoreList(Class<T> tClass, double score, int size) {
-        List<T> movies = contentRepository.getContentsScoreIsGreaterThan(tClass, score, size);
+    public ContentDto.MainList getHighScoreList(ContentTypeParameter type, double score, int size) {
+        List<Content> highScoreContents = contentRepository.getContentsScoreIsGreaterThan(type, score, size);
         return ContentDto.MainList.builder()
                 .type(LIST_TYPE_SCORE)
                 .title("평균별점이 높은 작품")
-                .list(getContentsWithScore(movies))
+                .list(getContentsWithScore(highScoreContents))
                 .build();
     }
 
     /**
      * 해당 컨텐츠 종류에서 해당 직업을 가진 인물 중
      * 가장 많은 작품에 참여한 인물의 작품 리스트를 가져온다.
-     * @param tClass 컨텐츠 종류 Class
+     * @param type 컨텐츠 종류 Enum
      * @param job 직업(ex. 감독, 배우, 역자)
      * @param size 반환 개수
      * @return 화제의 인물 리스트
      */
-    public <T extends Content> ContentDto.MainList getPeopleList(Class<T> tClass, String job, int size) {
-        Participant people = participantRepository.findMostParticipatedHasJob(classTypeToString(tClass), job);
-        List<T> contents = contentRepository.getContentsHasParticipant(tClass, people, size);
+    public ContentDto.MainList getPeopleList(ContentTypeParameter type, String job, int size) {
+        Participant people = participantRepository.findMostFamous(type, job);
+        List<Content> famousContents = contentRepository.getContentsHasParticipant(type, people.getId(), size);
         return ContentDto.MainList.builder()
                 .type(LIST_TYPE_POPULAR)
                 .title(String.format("화제의 %s %s의 작품", job, people.getName()))
-                .list(getContentsWithScore(contents))
+                .list(getContentsWithScore(famousContents))
                 .build();
     }
 
     /**
      * 해당 컨텐츠 종류에서 해당 태그가
      * 포함된 작품 리스트를 가져온다.
-     * @param tClass 컨텐츠 종류 Class
+     * @param type 컨텐츠 종류 Enum
      * @param tag 태그
      * @param size 반환 개수
      * @return 화제의 인물 리스트
      */
-    public <T extends Content> ContentDto.MainList getTagList(Class<T> tClass, Tag tag, int size) {
-        List<T> tagMovies = contentRepository.getContentsTagged(tClass, tag, size);
+    public ContentDto.MainList getTagList(ContentTypeParameter type, Tag tag, int size) {
+        List<Content> taggedContents = contentRepository.getContentsTagged(type, tag.getId(), size);
         return ContentDto.MainList.builder()
                 .type(LIST_TYPE_TAG)
                 .title(String.format("#%s", tag.getDescription()))
-                .list(getContentsWithScore(tagMovies))
+                .list(getContentsWithScore(taggedContents))
                 .build();
     }
 
     /**
-     * 해당 컨텐츠 종류에서 해당 컬렉션에
+     * 해당 컬렉션에
      * 포함된 작품 리스트를 가져온다.
-     * @param tClass 컨텐츠 종류 Class
      * @param collection 컬렉션
      * @param size 반환 개수
      * @return 화제의 인물 리스트
      */
-    public <T extends Content> ContentDto.MainListForCollection getCollectionList(Class<T> tClass, Collection collection,
-                                                                                  int size) {
-        List<T> collectionMovies = contentRepository.getContentsInCollection(tClass, collection, 1, size);
+    public ContentDto.MainListForCollection getCollectionList(Collection collection, int size) {
+        List<Content> collectionMovies = contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(0, size));
         return ContentDto.MainListForCollection.builder()
                 .type(LIST_TYPE_COLLECTION)
                 .id(collection.getId())
@@ -234,7 +234,7 @@ public class ContentService {
      * @param contents 컨텐츠 리스트
      * @return 평균 평점이 포함된 리스트
      */
-    public <T extends Content> List<ContentDto.MainListItem> getContentsWithScore(List<T> contents) {
+    public List<ContentDto.MainListItem> getContentsWithScore(List<Content> contents) {
         Map<Long, Double> contentScore = getContentScore(contents);
         return contents.stream()
                 .map(content -> ContentDto.MainListItem.of(content, contentScore.get(content.getId())))
@@ -258,15 +258,16 @@ public class ContentService {
     /**
      * 해당 컨텐츠 종류에 해당하는 왓챠피디아 컬렉션 리스트를 조회한다.
      * 조회결과는 컬렉션 정보, 보여줄 이미지 리스트
-     * @param tClass 컨텐츠 종류 Class
+     * @param type 컨텐츠 종류 Enum
      * @return 왓챠피디아 컬렉션 리스트
      */
-    public <T extends Content> List<ContentDto.ListForAward> getAwardList(Class<T> tClass) {
-        List<Collection> awardCollection = collectionRepository.getAward(classTypeToString(tClass));
+    public <T extends Content> List<ContentDto.ListForAward> getAwardList(ContentTypeParameter type) {
+        List<Collection> awardCollection = collectionRepository.getAward(type);
 
         List<ContentDto.AwardItem> items = new ArrayList<>();
         for (Collection collection : awardCollection) {
-            List<T> contentsInCollection = contentRepository.getContentsInCollection(tClass, collection, 1, 4);
+            List<Content> contentsInCollection =
+                    contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(0, AWARD_POSTER_IMAGE_COUNT));
             items.add(new ContentDto.AwardItem(collection, contentsInCollection));
         }
         ContentDto.ListForAward awardList = ContentDto.ListForAward.builder()
@@ -279,18 +280,6 @@ public class ContentService {
     }
 
     /**
-     * 컨텐츠 클래스 타입을 DB에 저장되는 String 값로 변환한다.
-     * @param tClass 컨텐츠 종류 Class
-     * @return 컨텐츠 종류 String
-     */
-    public <T extends Content> String classTypeToString(Class<T> tClass) {
-        if (tClass == Movie.class) return "M";
-        else if (tClass == Book.class) return "B";
-        else if (tClass == TvShow.class) return "S";
-        else throw new ValueNotMatchException(ErrorCode.CONTENT_TYPE_NOT_VALID);
-    }
-
-    /**
      * 왓챠피디아 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
      * @param id 컬렉션 아이디
      * @param page 페이지
@@ -298,11 +287,12 @@ public class ContentService {
      * @return 컬렉션 상세 정보 및 컨텐츠 리스트
      */
     public ContentDto.MainList getAwardDetail(Long id, int page, int size) {
-        Collection collection = collectionRepository.findById(id);
-        if (collection == null || !collection.getUser().getId().equals(AWARD_ADMIN_ID))
+        Optional<Collection> optionalCollection = collectionRepository.findById(id);
+        Collection collection = optionalCollection.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        if (!collection.getUser().getId().equals(AWARD_ADMIN_ID))
             throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
 
-        List<Content> contents = contentRepository.getContentsInCollection(Content.class, collection, page, size);
+        List<Content> contents = contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(page - 1, size));
         return ContentDto.MainList.builder()
                 .type(LIST_TYPE_AWARD)
                 .title(collection.getTitle())
@@ -318,17 +308,16 @@ public class ContentService {
      * @return 컬렉션 상세 정보 및 컨텐츠 리스트
      */
     public ContentDto.CollectionDetail getCollectionDetail(Long id, int page, int size) {
-        Collection collection = collectionRepository.findById(id);
-        if (collection == null)
-            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        Optional<Collection> optionalCollection = collectionRepository.findById(id);
+        Collection collection = optionalCollection.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
 
-        Integer contentCount = collectionRepository.getContentCount(collection.getId());
-        List<Content> contents = contentRepository.getContentsInCollection(Content.class, collection, page, size);
+        Long contentCount = collectionRepository.countContentById(collection.getId());
+        List<Content> contents = contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(page - 1, size));
         return ContentDto.CollectionDetail.builder()
                 .userName(collection.getUser().getName())
                 .title(collection.getTitle())
                 .description(collection.getDescription())
-                .contentCount(contentCount)
+                .contentCount(contentCount != null ? contentCount.intValue() : 0)
                 .list(getCollectionContentsWithScore(contents))
                 .build();
     }
@@ -393,7 +382,7 @@ public class ContentService {
      * @return 검색 결과 DTO 리스트(SearchMovieItem, SearchTvShowItem, SearchBookItem)
      */
     private List<Object> getSearchList(List<Long> ids) {
-        List<Content> contents = contentRepository.findListIn(Content.class, new HashSet<>(ids));
+        List<Content> contents = contentRepository.findAllById(ids);
         List<Object> result = new ArrayList<>();
 
         for (Content content : contents) {

@@ -6,6 +6,7 @@ build/
 !**/src/test/**/build/
 
 src/main/.DS_Store
+src/main/java/com/devpedia/watchapedia/.DS_Store
 src/**/secret.yml
 
 ### STS ###
