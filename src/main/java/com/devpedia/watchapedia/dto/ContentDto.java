@@ -85,7 +85,8 @@ public class ContentDto {
     @AllArgsConstructor
     @Builder
     public static class MainListForCollection {
-        private Long id;
+        private Long collectionId;
+        private Long userId;
         private String type;
         private String title;
         private String subtitle;
