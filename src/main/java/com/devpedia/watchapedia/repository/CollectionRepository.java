@@ -24,7 +24,7 @@ public class CollectionRepository {
         return em.createNativeQuery(
                 "select c2.* " +
                         "from collection_content cc " +
-                        "join content c on cc.cotent_id = c.content_id " +
+                        "join content c on cc.content_id = c.content_id " +
                         "join collection c2 on cc.collection_id = c2.collection_id " +
                         "and c.dtype = :type " +
                         "group by cc.collection_id " +
@@ -53,5 +53,29 @@ public class CollectionRepository {
                         "group by cc.collection", Collection.class)
                 .setParameter("type", type)
                 .getResultList();
+    }
+
+    /**
+     * PK 로 해당 컬렉션을 조회한다.
+     * @param id 컬렉션 아이디
+     * @return 컬렉션
+     */
+    public Collection findById(Long id) {
+        return em.find(Collection.class, id);
+    }
+
+    /**
+     * 컬렉션에 포함된 총 컨텐츠 개수를 구한다.
+     * @param id 컬렉션 아이디
+     * @return 컨텐츠 개수
+     */
+    public Integer getContentCount(Long id) {
+        return em.createQuery(
+                "select count(cc.content) " +
+                        "from CollectionContent cc " +
+                        "where cc.id = :id", Long.class)
+                .setParameter("id", id)
+                .getSingleResult()
+                .intValue();
     }
 }

@@ -29,6 +29,7 @@ public class Interest {
     @Column(nullable = false)
     private InterestState state;
 
+    @Builder
     public Interest(User user, Content content, InterestState state) {
         this.id = new InterestId(user.getId(), content.getId());
         this.user = user;

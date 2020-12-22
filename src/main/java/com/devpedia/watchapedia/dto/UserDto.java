@@ -1,12 +1,16 @@
 package com.devpedia.watchapedia.dto;
 
+import com.devpedia.watchapedia.domain.Content;
 import com.devpedia.watchapedia.domain.User;
 import com.devpedia.watchapedia.domain.enums.AccessRange;
-import com.fasterxml.jackson.annotation.JsonFilter;
+import com.devpedia.watchapedia.domain.enums.InterestState;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
+import com.devpedia.watchapedia.dto.enums.InterestContentOrder;
+import com.devpedia.watchapedia.dto.enums.RatingContentOrder;
 import lombok.*;
 
-import javax.persistence.Column;
 import javax.validation.constraints.*;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class UserDto {
@@ -127,18 +131,142 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class UserRatingAndWishContent {
-        private RatingAndWishCount movie;
-        private RatingAndWishCount book;
-        private RatingAndWishCount tvShow;
+    public static class UserActionCounts {
+        private ActionCounts movie;
+        private ActionCounts book;
+        private ActionCounts tvShow;
     }
 
     @Getter @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class RatingAndWishCount {
+    public static class ActionCounts {
         private Integer ratingCount;
         private Integer wishCount;
+        private Integer watchingCount;
+        private Integer notInterestCount;
+        private Integer commentCount;
+    }
+
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RatingContentParameter {
+        private ContentTypeParameter type;
+        private RatingContentOrder order;
+        private Integer page;
+        private Integer size;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserRatingGroup {
+        private Integer count;
+        private List<ContentDto.MainListItem> list;
+    }
+
+    @Getter @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class InterestContentParameter {
+        private ContentTypeParameter type;
+        private InterestState state;
+        private InterestContentOrder order;
+        private Integer page;
+        private Integer size;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserAnalysisData {
+        private String userName;
+        private UserRatingAnalysis rating;
+        private UserMovieAnalysis movie;
+        private UserBookAnalysis book;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserRatingAnalysis {
+        private Integer movieCount;
+        private Integer bookCount;
+        private Integer tvShowCount;
+        private int totalCount;
+        private Double average;
+        private Double mostRating;
+        private LinkedHashMap<Double, Integer> distribution;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserMovieAnalysis {
+        private List<FavoriteCommon> tag;
+        private List<FavoriteCommon> country;
+        private List<FavoriteCommon> category;
+        private List<FavoritePerson> actor;
+        private List<FavoritePerson> director;
+        private Integer totalRunningTimeInMinute;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserBookAnalysis {
+        private List<FavoriteCommon> tag;
+        private List<FavoritePerson> author;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class FavoriteCommon {
+        private String description;
+        private Double score;
+        private Integer count;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class FavoritePerson {
+        private Long id;
+        private String name;
+        private String profileImagePath;
+        private String movieName;
+        private Double score;
+        private Integer count;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SearchUserItem {
+        private Long id;
+        private String name;
+        private String description;
+        private ActionCounts counts;
     }
 }

@@ -1,11 +1,9 @@
 package com.devpedia.watchapedia.dto;
 
 import com.devpedia.watchapedia.domain.*;
-import com.devpedia.watchapedia.domain.enums.InterestState;
 import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.*;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 

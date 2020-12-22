@@ -23,13 +23,12 @@ public class DetailController {
      * 상세페이지 정보 조회
      * @param accessToken 로그인되어있는지 체크하기 위한 엑세스 토큰
      * @param contentId 어떤 상세페이지 인지 확인하기 위한 콘텐츠 아이디
-     * @return 상세페이지 정보
+     * @return 상세페이지 정보(test: userId:6838L)
      */
     @GetMapping("/public/detail")
     public DetailDto.DetailContentInfoList getDetailInfoList(@RequestHeader(name = JwtTokenProvider.ACCESS_TOKEN_HEADER) @NotBlank String accessToken,
                                                              @RequestParam long contentId){
-        //Long userId = redisService.getDetailAccessTokenOrThrow(accessToken);
-        Long userId = 6838L;
+        Long userId = redisService.getDetailAccessTokenOrThrow(accessToken);
         return detailService.detailInfoList(contentId, userId);
     }
 

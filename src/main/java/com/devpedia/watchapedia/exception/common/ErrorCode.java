@@ -3,15 +3,19 @@ package com.devpedia.watchapedia.exception.common;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.http.HttpStatus;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.springframework.http.HttpStatus.*;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum ErrorCode {
 
+    // A: Etc
+    ACCESS_NOT_AVAILABLE(BAD_REQUEST, "A001", "조회할 권한이 없습니다."),
+    CONTENT_TYPE_NOT_VALID(INTERNAL_SERVER_ERROR, "A002", "Class 타입 변환 실패"),
+    INTERNAL_ERROR(INTERNAL_SERVER_ERROR, "A999", "Unknown Internal Error"),
 
     // B: IO Fail
     OAUTH_PROVIDER_FAIL(BAD_REQUEST, "B001", "OAuth인증에 실패했습니다"),
+    ELASTIC_SEARCH_FAIL(BAD_REQUEST, "B001", "ElasticSearch 오류 발생"),
 
     // C: Client error
     INPUT_VALUE_INVALID(BAD_REQUEST, "C001", "적절하지 않은 입력값이 있습니다"),

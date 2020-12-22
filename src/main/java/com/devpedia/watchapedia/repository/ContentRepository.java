@@ -4,6 +4,8 @@ import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.dto.ContentDto;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.Hibernate;
+import org.hibernate.proxy.HibernateProxy;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
@@ -138,10 +140,11 @@ public class ContentRepository {
      * 해당 컬렉션에 포함되는 컨텐츠를 개수만큼 반환한다.
      * @param tClass 컨텐츠 종류 Class
      * @param collection 컬렉션
+     * @param page 페이지
      * @param size 반환 개수
      * @return 컬렉션에 담긴 컨텐츠 리스트
      */
-    public <T extends Content> List<T> getContentsInCollection(Class<T> tClass, Collection collection, int size) {
+    public <T extends Content> List<T> getContentsInCollection(Class<T> tClass, Collection collection, int page, int size) {
         return em.createQuery(
                 "select m " +
                         "from CollectionContent cc " +
@@ -149,7 +152,57 @@ public class ContentRepository {
                         "join " +  tClass.getSimpleName() + " m on m.id = c.id " +
                         "where cc.collection.id = :id", tClass)
                 .setParameter("id", collection.getId())
+                .setFirstResult((page - 1) * size)
                 .setMaxResults(size)
                 .getResultList();
+    }
+
+    /**
+     * 전체 평점 평가 개수를 구한다.
+     * @return 전체 평가 개수
+     */
+    public Long getTotalScoreCount() {
+        return (Long) em.createQuery(
+                "select count(s) " +
+                        "from Score s")
+                .getSingleResult();
+    }
+
+    /**
+     * 코멘트가 갯수가 많은 순으로 range 만큼 조회하고
+     * 그 중 size 개를 랜덤으로 뽑아낸다.
+     * @return 트렌트 컨텐츠 제목
+     */
+    public List<String> getTrendingWords(int range, int size) {
+        return em.createNativeQuery(
+                "select main_title " +
+                        "from (select " +
+                        "         c.main_title, " +
+                        "         (select count(cc.content_id) " +
+                        "         from comment cc " +
+                        "         where cc.content_id = c.content_id) as count " +
+                        "      from content c " +
+                        "      order by count desc " +
+                        "      limit :range) as t " +
+                        "order by rand()")
+                .setParameter("range", range)
+                .setMaxResults(size)
+                .getResultList();
+    }
+
+    /**
+     * 프록시(HibernateProxy) 객체를 실제 컨텐츠 엔티티로 언프록시 한다
+     * @param entity unproxy 할 컨텐츠 엔티티
+     * @return unproxy 된 컨텐츠 엔티티
+     */
+    public <T extends Content> T initializeAndUnproxy(T entity) {
+        if (entity == null) throw new NullPointerException("Entity passed for initialization is null");
+
+        Hibernate.initialize(entity);
+
+        if (entity instanceof HibernateProxy)
+            entity = (T) ((HibernateProxy) entity).getHibernateLazyInitializer().getImplementation();
+
+        return entity;
     }
 }
