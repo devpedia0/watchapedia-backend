@@ -5,10 +5,12 @@ import com.devpedia.watchapedia.domain.Collection;
 import com.devpedia.watchapedia.domain.Tag;
 import com.devpedia.watchapedia.dto.BookDto;
 import com.devpedia.watchapedia.dto.ContentDto;
-import com.devpedia.watchapedia.repository.CollectionRepository;
-import com.devpedia.watchapedia.repository.TagRepository;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
+import com.devpedia.watchapedia.repository.collection.CollectionRepository;
+import com.devpedia.watchapedia.repository.tag.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -56,7 +58,7 @@ public class BookService {
      * @return 평점이 높은 책 리스트
      */
     public List<ContentDto.MainList> getHighScoreList() {
-        ContentDto.MainList highScoreList = contentService.getHighScoreList(Book.class, HIGH_SCORE, HIGH_SCORE_LIST_SIZE);
+        ContentDto.MainList highScoreList = contentService.getHighScoreList(ContentTypeParameter.BOOKS, HIGH_SCORE, HIGH_SCORE_LIST_SIZE);
         return Collections.singletonList(highScoreList);
     }
 
@@ -66,7 +68,7 @@ public class BookService {
      * @return 화제의 인물의 책 리스트(저자)
      */
     public List<ContentDto.MainList> getPopularList() {
-        ContentDto.MainList actorList = contentService.getPeopleList(Book.class, POPULAR_JOB_WRITER, POPULAR_LIST_SIZE);
+        ContentDto.MainList actorList = contentService.getPeopleList(ContentTypeParameter.BOOKS, POPULAR_JOB_WRITER, POPULAR_LIST_SIZE);
         return Collections.singletonList(actorList);
     }
 
@@ -76,9 +78,9 @@ public class BookService {
      */
     public List<ContentDto.MainList> getTagList() {
         List<ContentDto.MainList> result = new ArrayList<>();
-        List<Tag> tags = tagRepository.getRandom(RANDOM_TAG_COUNT);
+        List<Tag> tags = tagRepository.findByRandom(PageRequest.of(0, RANDOM_TAG_COUNT));
         for (Tag tag : tags) {
-            ContentDto.MainList tagList = contentService.getTagList(Book.class, tag, TAG_LIST_SIZE);
+            ContentDto.MainList tagList = contentService.getTagList(ContentTypeParameter.BOOKS, tag, TAG_LIST_SIZE);
             result.add(tagList);
         }
         return result;
@@ -90,10 +92,10 @@ public class BookService {
      */
     public List<ContentDto.MainListForCollection> getCollectionList() {
         List<ContentDto.MainListForCollection> result = new ArrayList<>();
-        List<Collection> collections = collectionRepository.getRandom(contentService.classTypeToString(Book.class), RANDOM_COLLECTION_COUNT);
+        List<Collection> collections = collectionRepository.getRandom(ContentTypeParameter.BOOKS, RANDOM_COLLECTION_COUNT);
 
         for (Collection collection : collections) {
-            ContentDto.MainListForCollection collectionList = contentService.getCollectionList(Book.class, collection, COLLECTION_LIST_SIZE);
+            ContentDto.MainListForCollection collectionList = contentService.getCollectionList(collection, COLLECTION_LIST_SIZE);
             result.add(collectionList);
         }
         return result;
@@ -104,6 +106,6 @@ public class BookService {
      * @return 왓챠피디아 컬렉션
      */
     public List<ContentDto.ListForAward> getAwardList() {
-        return contentService.getAwardList(Book.class);
+        return contentService.getAwardList(ContentTypeParameter.BOOKS);
     }
 }

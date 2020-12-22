@@ -4,12 +4,14 @@ import com.devpedia.watchapedia.domain.Tag;
 import com.devpedia.watchapedia.dto.TagDto;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
-import com.devpedia.watchapedia.repository.TagRepository;
+import com.devpedia.watchapedia.repository.tag.TagRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,13 +29,13 @@ public class TagService {
     }
 
     public void delete(Long id) {
-        Tag tag = tagRepository.findById(id);
-        if (tag == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        Optional<Tag> optionalTag = tagRepository.findById(id);
+        Tag tag = optionalTag.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
         tagRepository.delete(tag);
     }
 
     public List<TagDto.TagInfo> searchWithPaging(String query, int page, int size) {
-        List<Tag> list = tagRepository.searchWithPaging(query, page, size);
+        List<Tag> list = tagRepository.findByDescriptionContaining(query, PageRequest.of(page - 1, size));
 
         return list.stream()
                 .map(TagDto.TagInfo::new)

@@ -5,10 +5,12 @@ import com.devpedia.watchapedia.domain.Movie;
 import com.devpedia.watchapedia.domain.Tag;
 import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.MovieDto;
-import com.devpedia.watchapedia.repository.CollectionRepository;
-import com.devpedia.watchapedia.repository.TagRepository;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
+import com.devpedia.watchapedia.repository.collection.CollectionRepository;
+import com.devpedia.watchapedia.repository.tag.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,7 +60,7 @@ public class MovieService {
      * @return 평점이 높은 영화 리스트
      */
     public List<ContentDto.MainList> getHighScoreList() {
-        ContentDto.MainList highScoreList = contentService.getHighScoreList(Movie.class, HIGH_SCORE, HIGH_SCORE_LIST_SIZE);
+        ContentDto.MainList highScoreList = contentService.getHighScoreList(ContentTypeParameter.MOVIES, HIGH_SCORE, HIGH_SCORE_LIST_SIZE);
         return Collections.singletonList(highScoreList);
     }
 
@@ -68,8 +70,8 @@ public class MovieService {
      * @return 화제의 인물의 영화 리스트(배우, 감독)
      */
     public List<ContentDto.MainList> getPopularList() {
-        ContentDto.MainList actorList = contentService.getPeopleList(Movie.class, POPULAR_JOB_ACTOR, POPULAR_LIST_SIZE);
-        ContentDto.MainList directorList = contentService.getPeopleList(Movie.class, POPULAR_JOB_DIRECTOR, POPULAR_LIST_SIZE);
+        ContentDto.MainList actorList = contentService.getPeopleList(ContentTypeParameter.MOVIES, POPULAR_JOB_ACTOR, POPULAR_LIST_SIZE);
+        ContentDto.MainList directorList = contentService.getPeopleList(ContentTypeParameter.MOVIES, POPULAR_JOB_DIRECTOR, POPULAR_LIST_SIZE);
         return Arrays.asList(actorList, directorList);
     }
 
@@ -80,24 +82,24 @@ public class MovieService {
     public List<ContentDto.MainList> getTagList() {
         List<ContentDto.MainList> result = new ArrayList<>();
 
-        List<Tag> tags = tagRepository.getRandom(RANDOM_TAG_COUNT);
+        List<Tag> tags = tagRepository.findByRandom(PageRequest.of(0, RANDOM_TAG_COUNT));
         for (Tag tag : tags) {
-            ContentDto.MainList tagList = contentService.getTagList(Movie.class, tag, TAG_LIST_SIZE);
+            ContentDto.MainList tagList = contentService.getTagList(ContentTypeParameter.MOVIES, tag, TAG_LIST_SIZE);
             result.add(tagList);
         }
         return result;
     }
 
     /**
-     * 랜덤으로 뽑힌 컬렉션에 포함된 영화을 조회.
+     * 랜덤으로 뽑힌 컬렉션에 포함된 영화를 조회.
      * @return 컬렉션에 포함된 영화 리스트들
      */
     public List<ContentDto.MainListForCollection> getCollectionList() {
         List<ContentDto.MainListForCollection> result = new ArrayList<>();
-        List<Collection> collections = collectionRepository.getRandom(contentService.classTypeToString(Movie.class), RANDOM_COLLECTION_COUNT);
+        List<Collection> collections = collectionRepository.getRandom(ContentTypeParameter.MOVIES, RANDOM_COLLECTION_COUNT);
 
         for (Collection collection : collections) {
-            ContentDto.MainListForCollection collectionList = contentService.getCollectionList(Movie.class, collection, COLLECTION_LIST_SIZE);
+            ContentDto.MainListForCollection collectionList = contentService.getCollectionList(collection, COLLECTION_LIST_SIZE);
             result.add(collectionList);
         }
 
@@ -109,6 +111,6 @@ public class MovieService {
      * @return 왓챠피디아 컬렉션
      */
     public List<ContentDto.ListForAward> getAwardList() {
-        return contentService.getAwardList(Movie.class);
+        return contentService.getAwardList(ContentTypeParameter.MOVIES);
     }
 }

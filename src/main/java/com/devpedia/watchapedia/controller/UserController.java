@@ -10,7 +10,7 @@ import com.devpedia.watchapedia.dto.enums.RatingContentOrder;
 import com.devpedia.watchapedia.exception.ExternalIOException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.repository.RedisRepository;
-import com.devpedia.watchapedia.repository.UserRepository;
+import com.devpedia.watchapedia.repository.user.UserRepository;
 import com.devpedia.watchapedia.security.JwtTokenProvider;
 import com.devpedia.watchapedia.service.RedisService;
 import com.devpedia.watchapedia.service.UserService;
@@ -105,7 +105,7 @@ public class UserController {
 
             userService.joinOAuthIfNotExist(userInfo.getEmail(), userInfo.getName());
 
-            User user = userRepository.findByEmail(userInfo.getEmail());
+            User user = userRepository.findFirstByEmail(userInfo.getEmail());
 
             String accessToken = jwtTokenProvider.createAccessToken(String.valueOf(user.getId()), user.getRoles());
             String refreshToken = jwtTokenProvider.createRefreshToken(String.valueOf(user.getId()), user.getRoles());
