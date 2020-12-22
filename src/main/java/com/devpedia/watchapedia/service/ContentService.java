@@ -222,7 +222,8 @@ public class ContentService {
         List<Content> collectionMovies = contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(0, size));
         return ContentDto.MainListForCollection.builder()
                 .type(LIST_TYPE_COLLECTION)
-                .id(collection.getId())
+                .collectionId(collection.getId())
+                .userId(collection.getUser().getId())
                 .title(String.format("%s님의 컬렉션", collection.getUser().getName()))
                 .subtitle(collection.getTitle())
                 .list(getContentsWithScore(collectionMovies))
