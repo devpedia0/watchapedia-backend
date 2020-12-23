@@ -52,7 +52,7 @@ public interface UserCustomRepository {
      * @param type 컨텐츠 타입 Enum
      * @return 평점별 평가한 작품 개수
      */
-    Map<Double, Integer> getGroupedScoreCount(Long userId, ContentTypeParameter type);
+    Map<String, Integer> getGroupedScoreCount(Long userId, ContentTypeParameter type);
 
     /**
      * 유저의 보고싶어요, 보는중, 관심없음에 해당하는 작품을 가져온다.

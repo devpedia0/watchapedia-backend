@@ -75,7 +75,11 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
                 .groupBy(content.dtype)
                 .fetch();
 
-        UserDto.UserActionCounts contents = new UserDto.UserActionCounts();
+        UserDto.UserActionCounts contents = UserDto.UserActionCounts.builder()
+                .movie(UserDto.ActionCounts.zero())
+                .book(UserDto.ActionCounts.zero())
+                .tvShow(UserDto.ActionCounts.zero())
+                .build();
 
         for (Tuple tuple : result) {
             Long ratingCount = tuple.get(1, Long.class);
@@ -86,9 +90,9 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
 
             UserDto.ActionCounts actionCounts = UserDto.ActionCounts.builder()
                     .ratingCount(ratingCount != null ? ratingCount.intValue() : 0)
-                    .wishCount(wishCount)
-                    .watchingCount(watchingCount)
-                    .notInterestCount(notInterestCount)
+                    .wishCount(wishCount != null ? wishCount : 0)
+                    .watchingCount(watchingCount != null ? watchingCount : 0)
+                    .notInterestCount(notInterestCount != null ? notInterestCount : 0)
                     .commentCount(commentCount != null ? commentCount.intValue() : 0)
                     .build();
 
@@ -113,7 +117,7 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
     @Override
     public List<Score> findUserScores(Long userId, ContentTypeParameter type, Double score, RatingContentOrder order, Pageable pageable) {
         QScore score2 = new QScore("score2");
-        NumberPath<Double> avg = Expressions.numberPath(Double.class, "avg");
+        NumberPath<Double> avg = Expressions.numberPath(Double.class, "average");
 
         List<Tuple> result = query
                 .select(
@@ -163,12 +167,12 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
                         "from (select s.content_id, " +
                         "             user_id, " +
                         "             score, " +
-                        "             row_number() over (partition by s.score order by c.main_title) as row " +
+                        "             row_number() over (partition by s.score order by c.main_title) as rowcount " +
                         "      from score s " +
                         "      join content c on c.content_id = s.content_id " +
                         "      where c.dtype = :type " +
                         "        and s.user_id = :userId) t " +
-                        "where t.row <= :size", Score.class)
+                        "where t.rowcount <= :size", Score.class)
                 .setParameter("type", type.getDtype())
                 .setParameter("userId", userId)
                 .setParameter("size", size)
@@ -176,10 +180,10 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
     }
 
     @Override
-    public Map<Double, Integer> getGroupedScoreCount(Long userId, ContentTypeParameter type) {
+    public Map<String, Integer> getGroupedScoreCount(Long userId, ContentTypeParameter type) {
         List<Tuple> result = query
                 .select(
-                        score1.score,
+                        score1.score.stringValue(),
                         score1.id.contentId.count()
                 )
                 .from(score1)
@@ -193,7 +197,7 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
 
         return result.stream()
                 .collect(Collectors.toMap(
-                        tuple -> tuple.get(score1.score),
+                        tuple -> tuple.get(score1.score.stringValue()),
                         tuple -> tuple.get(score1.id.contentId.count()).intValue()));
     }
 
@@ -245,9 +249,10 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
     public UserDto.UserRatingAnalysis getRatingAnalysis(Long id) {
         String sql =
                 "select t.*, " +
-                        "       (select case greatest(t.`0.5`, t.`1.0`, t.`1.5`, t.`2.0`, " +
-                        "                             t.`2.5`, t.`3.0`, t.`3.5`, t.`4.0`, " +
-                        "                             t.`4.5`, t.`5.0`) " +
+                        "       (select case greatest(t.`0.0`, t.`0.5`, t.`1.0`, t.`1.5`, " +
+                        "                             t.`2.0`, t.`2.5`, t.`3.0`, t.`3.5`, " +
+                        "                             t.`4.0`, t.`4.5`, t.`5.0`) " +
+                        "                when t.`0.0` then 0.0 " +
                         "                when t.`0.5` then 0.5 " +
                         "                when t.`1.0` then 1.0 " +
                         "                when t.`1.5` then 1.5 " +
@@ -264,6 +269,7 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
                         "             count(case when c.dtype = 'B' then 1 end) as book, " +
                         "             count(case when c.dtype = 'S' then 1 end) as tv_show, " +
                         "             avg(s.score) as average, " +
+                        "             count(case when s.score = 0.0 then 1 end) as \"0.0\"," +
                         "             count(case when s.score = 0.5 then 1 end) as \"0.5\", " +
                         "             count(case when s.score = 1.0 then 1 end) as \"1.0\", " +
                         "             count(case when s.score = 1.5 then 1 end) as \"1.5\", " +
@@ -282,10 +288,10 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
                 .setParameter("id", id)
                 .getSingleResult();
 
-        LinkedHashMap<Double, Integer> distribution = new LinkedHashMap<>();
+        LinkedHashMap<String, Integer> distribution = new LinkedHashMap<>();
         for (double d = 0.5; d <= 5.0; d += 0.5) {
-            int objIndex = (int) ((d - 0.5) * 2 + 5);
-            distribution.put(d, ((BigInteger) result[objIndex]).intValue());
+            int objIndex = (int) ((d - 0.5) * 2 + 6);
+            distribution.put(String.valueOf(d), ((BigInteger) result[objIndex]).intValue());
         }
 
         return UserDto.UserRatingAnalysis.builder()
@@ -293,9 +299,9 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
                 .movieCount(((BigInteger) result[1]).intValue())
                 .bookCount(((BigInteger) result[2]).intValue())
                 .tvShowCount(((BigInteger) result[3]).intValue())
-                .average((Double) result[4])
+                .average(result[4] != null ? (Double) result[4] : 0.0)
                 .distribution(distribution)
-                .mostRating(((BigDecimal) result[15]).doubleValue())
+                .mostRating(((BigDecimal) result[16]).doubleValue())
                 .build();
     }
 
@@ -309,7 +315,7 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
                         participant.id,
                         image.path,
                         participant.name,
-                        content.mainTitle,
+                        content.mainTitle.min(),
                         as(score1.score.avg(), score),
                         as(contentParticipant.participant.id.count().intValue(), count)
                 )
@@ -435,12 +441,13 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
 
     @Override
     public int getTotalRunningTime(Long id) {
-        return query
+        Integer result = query
                 .select(movie.runningTimeInMinutes.sum())
                 .from(score1)
                 .join(movie).on(score1.id.contentId.eq(movie.id))
                 .where(score1.id.userId.eq(id))
                 .fetchFirst();
+        return result != null ? result : 0;
     }
 
     @Override
@@ -455,7 +462,7 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
                         interestCountCase(InterestState.NOT_INTEREST).sum().intValue()
                 )
                 .from(user)
-                .join(interest).on(interest.id.userId.eq(user.id))
+                .leftJoin(interest).on(interest.id.userId.eq(user.id))
                 .where(user.id.in(ids))
                 .groupBy(user.id)
                 .fetch();

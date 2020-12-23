@@ -18,6 +18,7 @@ import com.devpedia.watchapedia.repository.tag.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -249,7 +250,7 @@ public class ContentService {
      * @param contents 컨텐츠 리스트
      * @return 평균평점 Map
      */
-    protected <T extends Content> Map<Long, Double> getContentScore(List<T> contents) {
+    private <T extends Content> Map<Long, Double> getContentScore(List<T> contents) {
         Set<Long> ids = contents.stream()
                 .map(Content::getId)
                 .collect(Collectors.toSet());
@@ -283,17 +284,16 @@ public class ContentService {
     /**
      * 왓챠피디아 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
      * @param id 컬렉션 아이디
-     * @param page 페이지
-     * @param size 사이즈
+     * @param pageable pageable
      * @return 컬렉션 상세 정보 및 컨텐츠 리스트
      */
-    public ContentDto.MainList getAwardDetail(Long id, int page, int size) {
+    public ContentDto.MainList getAwardDetail(Long id, Pageable pageable) {
         Optional<Collection> optionalCollection = collectionRepository.findById(id);
         Collection collection = optionalCollection.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
         if (!collection.getUser().getId().equals(AWARD_ADMIN_ID))
             throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
 
-        List<Content> contents = contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(page - 1, size));
+        List<Content> contents = contentRepository.getContentsInCollection(collection.getId(), pageable);
         return ContentDto.MainList.builder()
                 .type(LIST_TYPE_AWARD)
                 .title(collection.getTitle())
@@ -304,16 +304,15 @@ public class ContentService {
     /**
      * 유저 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
      * @param id 컬렉션 아이디
-     * @param page 페이지
-     * @param size 사이즈
+     * @param pageable pageable
      * @return 컬렉션 상세 정보 및 컨텐츠 리스트
      */
-    public ContentDto.CollectionDetail getCollectionDetail(Long id, int page, int size) {
+    public ContentDto.CollectionDetail getCollectionDetail(Long id, Pageable pageable) {
         Optional<Collection> optionalCollection = collectionRepository.findById(id);
         Collection collection = optionalCollection.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
 
         Long contentCount = collectionRepository.countContentById(collection.getId());
-        List<Content> contents = contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(page - 1, size));
+        List<Content> contents = contentRepository.getContentsInCollection(collection.getId(), pageable);
         return ContentDto.CollectionDetail.builder()
                 .userName(collection.getUser().getName())
                 .title(collection.getTitle())
@@ -351,7 +350,7 @@ public class ContentService {
         List<Object> movieList = getSearchList(ids.get(ElasticSearchRepository.TYPE_MOVIE));
         List<Object> tvShowList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TV_SHOW));
         List<Object> bookList = getSearchList(ids.get(ElasticSearchRepository.TYPE_BOOK));
-        List<UserDto.SearchUserItem> userList = userService.getUserSearchList(query, SEARCH_RESULT_LIST_PAGE, SEARCH_RESULT_LIST_SIZE);
+        List<UserDto.SearchUserItem> userList = userService.getUserSearchList(query, PageRequest.of(SEARCH_RESULT_LIST_PAGE - 1, SEARCH_RESULT_LIST_SIZE));
 
         return ContentDto.SearchResult.builder()
                 .topResults(topList)

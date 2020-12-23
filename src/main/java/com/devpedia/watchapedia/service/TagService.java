@@ -7,6 +7,7 @@ import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.repository.tag.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,8 +35,8 @@ public class TagService {
         tagRepository.delete(tag);
     }
 
-    public List<TagDto.TagInfo> searchWithPaging(String query, int page, int size) {
-        List<Tag> list = tagRepository.findByDescriptionContaining(query, PageRequest.of(page - 1, size));
+    public List<TagDto.TagInfo> searchWithPaging(String query, Pageable pageable) {
+        List<Tag> list = tagRepository.findByDescriptionContaining(query, pageable);
 
         return list.stream()
                 .map(TagDto.TagInfo::new)
