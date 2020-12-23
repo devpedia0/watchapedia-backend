@@ -16,6 +16,7 @@ import com.devpedia.watchapedia.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -228,26 +229,27 @@ public class UserService {
      * @param parameter type, order, page, size
      * @return 평점 그룹 별 개수 및 리스트
      */
-    public Map<Double, UserDto.UserRatingGroup> getContentByRatingGroup(Long targetId, Long tokenId,
+    public Map<String, UserDto.UserRatingGroup> getContentByRatingGroup(Long targetId, Long tokenId,
                                                                         UserDto.RatingContentParameter parameter) {
         if (isAccessNotAvailable(targetId, tokenId))
             throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
 
-        Map<Double, Integer> counts = userRepository.getGroupedScoreCount(targetId, parameter.getType());
+        Map<String, Integer> counts = userRepository.getGroupedScoreCount(targetId, parameter.getType());
         List<Score> scores = userRepository.findUserGroupedScore(targetId, parameter.getType(), parameter.getSize());
 
-        Map<Double, UserDto.UserRatingGroup> result = new LinkedHashMap<>();
+        Map<String, UserDto.UserRatingGroup> result = new LinkedHashMap<>();
 
         for (double score = 0.5; score <= 5; score += 0.5) {
-            result.putIfAbsent(score, UserDto.UserRatingGroup.builder()
-                    .count(counts.getOrDefault(score, 0))
+            result.putIfAbsent(String.valueOf(score), UserDto.UserRatingGroup.builder()
+                    .count(counts.getOrDefault(String.valueOf(score), 0))
                     .list(new ArrayList<>())
                     .build());
         }
 
         for (Score score : scores) {
             Content content = contentRepository.initializeAndUnproxy(score.getContent());
-            result.get(score.getScore()).getList().add(ContentDto.MainListItem.of(content, score.getScore()));
+            result.get(String.valueOf(score.getScore()))
+                    .getList().add(ContentDto.MainListItem.of(content, score.getScore()));
         }
 
         return result;
@@ -375,12 +377,11 @@ public class UserService {
      * 평점, 코멘트, 보고싶어요, 보는중, 관심없음 개수를 담아서
      * 검색 결과 DTO 로 반환한다.
      * @param query 검색어(user.name)
-     * @param page 페이지
-     * @param size 사이즈
+     * @param pageable pageable
      * @return 유저 검색 결과
      */
-    public List<UserDto.SearchUserItem> getUserSearchList(String query, int page, int size) {
-        List<User> users = userRepository.findByNameContaining(query, PageRequest.of(page - 1, size));
+    public List<UserDto.SearchUserItem> getUserSearchList(String query, Pageable pageable) {
+        List<User> users = userRepository.findByNameContaining(query, pageable);
         Map<Long, UserDto.ActionCounts> actionCountsMap = userRepository.getActionCounts(getUserIds(users));
         return users.stream()
                 .map(user -> UserDto.SearchUserItem.builder()

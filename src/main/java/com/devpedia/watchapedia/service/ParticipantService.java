@@ -10,6 +10,7 @@ import com.devpedia.watchapedia.repository.participant.ParticipantRepository;
 import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +27,12 @@ public class ParticipantService {
     private final S3Service s3Service;
     private final ParticipantRepository participantRepository;
 
+    /**
+     * 인물 이미지와 함께 인물 정보를 등록한다.
+     * 인물 이미지가 없으면 없이 저장한다.
+     * @param request 인물 정보
+     * @param profile 프로필 사진
+     */
     public void addWithImage(ParticipantDto.ParticipantInsertRequest request, MultipartFile profile) {
         Image profileImage = null;
 
@@ -39,8 +46,8 @@ public class ParticipantService {
         participantRepository.save(participant);
     }
 
-    public List<ParticipantDto.ParticipantInfo> searchWithPaging(String query, int page, int size) {
-        List<Participant> list = participantRepository.findByNameContaining(query, PageRequest.of(page - 1, size));
+    public List<ParticipantDto.ParticipantInfo> searchWithPaging(String query, Pageable pageable) {
+        List<Participant> list = participantRepository.findByNameContaining(query, pageable);
 
         return list.stream()
                 .map(ParticipantDto.ParticipantInfo::new)

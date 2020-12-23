@@ -8,6 +8,7 @@ import com.devpedia.watchapedia.repository.content.ContentRepository;
 import com.devpedia.watchapedia.service.ContentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,7 +59,7 @@ public class ContentController {
      */
     @GetMapping("/public/awards/{id}")
     public ContentDto.MainList getStaffMadeInfo(@PathVariable Long id, @RequestParam @Min(1)@Max(20) int size) {
-        return contentService.getAwardDetail(id, 1, size);
+        return contentService.getAwardDetail(id, PageRequest.of(0, size));
     }
 
     /**
@@ -71,7 +72,7 @@ public class ContentController {
     public List<ContentDto.MainListItem> getStaffMadeContents(@PathVariable Long id,
                                                               @RequestParam @Positive int page,
                                                               @RequestParam @Min(1)@Max(20) int size) {
-        return contentService.getAwardDetail(id, page, size).getList();
+        return contentService.getAwardDetail(id, PageRequest.of(page - 1, size)).getList();
     }
 
     /**
@@ -82,7 +83,7 @@ public class ContentController {
      */
     @GetMapping("/public/collections/{id}")
     public ContentDto.CollectionDetail getCollectionInfo(@PathVariable Long id, @RequestParam @Min(1)@Max(20) int size) {
-        return contentService.getCollectionDetail(id, 1, size);
+        return contentService.getCollectionDetail(id, PageRequest.of(0, size));
     }
 
     /**
@@ -95,7 +96,7 @@ public class ContentController {
     public List<ContentDto.CollectionItem> getCollectionContents(@PathVariable Long id,
                                                                @RequestParam @Positive int page,
                                                                @RequestParam @Min(1)@Max(20) int size) {
-        return contentService.getCollectionDetail(id, page, size).getList();
+        return contentService.getCollectionDetail(id, PageRequest.of(page - 1, size)).getList();
     }
 
     /**

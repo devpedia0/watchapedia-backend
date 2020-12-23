@@ -47,6 +47,11 @@ public class S3Service {
                 .build();
     }
 
+    /**
+     * AWS S3 에 파일을 저장한다.
+     * @param file 이미지 멀티파트 파일
+     * @param filePath S3 내의 저장 경로 + 파일명 (ex. poster/image.jpg)
+     */
     public void upload(MultipartFile file, String filePath) {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(file.getSize());

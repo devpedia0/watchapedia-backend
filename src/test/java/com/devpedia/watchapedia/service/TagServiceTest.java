@@ -3,19 +3,19 @@ package com.devpedia.watchapedia.service;
 import com.devpedia.watchapedia.domain.Tag;
 import com.devpedia.watchapedia.dto.TagDto;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
-import com.devpedia.watchapedia.exception.ValueDuplicatedException;
-import com.devpedia.watchapedia.repository.TagRepository;
-import org.junit.jupiter.api.MethodOrderer;
+import com.devpedia.watchapedia.repository.tag.TagRepository;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -23,7 +23,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@TestMethodOrder(MethodOrderer.Alphanumeric.class)
 class TagServiceTest {
 
     @InjectMocks
@@ -54,7 +53,7 @@ class TagServiceTest {
                 .build();
 
         given(tagRepository.findById(anyLong()))
-                .willReturn(tag);
+                .willReturn(Optional.of(tag));
 
         // when
         tagService.delete(1L);
@@ -67,7 +66,7 @@ class TagServiceTest {
     public void delete_NotExistTag_ThrowException() throws Exception {
         // given
         given(tagRepository.findById(anyLong()))
-                .willReturn(null);
+                .willReturn(Optional.empty());
 
         // when
         Throwable throwable = catchThrowable(() -> tagService.delete(1L));
@@ -93,11 +92,11 @@ class TagServiceTest {
 
         List<Tag> tags = Arrays.asList(tag1, tag2, tag3);
 
-        given(tagRepository.searchWithPaging(anyString(), anyInt(), anyInt()))
+        given(tagRepository.findByDescriptionContaining(anyString(), any(Pageable.class)))
                 .willReturn(tags);
 
         // when
-        List<TagDto.TagInfo> tagInfos = tagService.searchWithPaging("tag", 1, 5);
+        List<TagDto.TagInfo> tagInfos = tagService.searchWithPaging("tag", PageRequest.of(0, 10));
 
         // then
         assertThat(tagInfos).hasSize(3);
@@ -106,11 +105,11 @@ class TagServiceTest {
     @Test
     public void searchWithPaging_ResultNotExist_ReturnEmptyList() throws Exception {
         // given
-        given(tagRepository.searchWithPaging(anyString(), anyInt(), anyInt()))
+        given(tagRepository.findByDescriptionContaining(anyString(), any(Pageable.class)))
                 .willReturn(new ArrayList<>());
 
         // when
-        List<TagDto.TagInfo> tagInfos = tagService.searchWithPaging("tag", 1, 5);
+        List<TagDto.TagInfo> tagInfos = tagService.searchWithPaging("tag", PageRequest.of(0, 10));
 
         // then
         assertThat(tagInfos).hasSize(0);
