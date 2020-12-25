@@ -1,6 +1,7 @@
 package com.devpedia.watchapedia.controller;
 
 import com.devpedia.watchapedia.dto.ContentDto;
+import com.devpedia.watchapedia.dto.DetailDto;
 import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
 import com.devpedia.watchapedia.exception.ExternalIOException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
@@ -10,16 +11,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Positive;
 import java.io.IOException;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -136,5 +136,87 @@ public class ContentController {
         } catch (IOException e) {
             throw new ExternalIOException(ErrorCode.ELASTIC_SEARCH_FAIL);
         }
+    }
+
+    @GetMapping("/contents/{id}")
+    public DetailDto.ContentDetail getContentDetail(@PathVariable Long id, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        return contentService.getContentDetail(id, tokenId);
+    }
+
+    @GetMapping("/contents/{id}/comments")
+    public List<DetailDto.CommentDetail> getContentComments(@PathVariable Long id, Principal principal,
+                                                            @RequestParam @Positive int page,
+                                                            @RequestParam @Min(1)@Max(10) int size) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        return contentService.getCommentInfo(id, tokenId, PageRequest.of(page - 1, size)).getList();
+    }
+
+    @GetMapping("/contents/{id}/collections")
+    public List<ContentDto.CollectionFourImages> getContentCollections(@PathVariable Long id,
+                                                                       @RequestParam @Positive int page,
+                                                                       @RequestParam @Min(1)@Max(10) int size) {
+        return contentService.getCollectionInfo(id, PageRequest.of(page - 1, size)).getList();
+    }
+
+    @GetMapping("/contents/{id}/similar")
+    public List<ContentDto.CollectionItem> getContentSimilar(@PathVariable Long id,
+                                                             @RequestParam @Positive int page,
+                                                             @RequestParam @Min(1)@Max(10) int size) {
+        return contentService.getSimilar(id, PageRequest.of(page - 1, size));
+    }
+
+    @PostMapping("/contents/{id}/comments")
+    public void createComment(@PathVariable Long id, @RequestBody DetailDto.CommentRequest request, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        contentService.createOrEditComment(id, tokenId, request);
+    }
+
+    @PutMapping("/contents/{id}/comments")
+    public void editComment(@PathVariable Long id, @RequestBody DetailDto.CommentRequest request, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        contentService.createOrEditComment(id, tokenId, request);
+    }
+
+    @DeleteMapping("/contents/{id}/comments")
+    public void deleteComment(@PathVariable Long id, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        contentService.deleteComment(id, tokenId);
+    }
+
+    @PostMapping("/contents/{id}/scores")
+    public void setScore(@PathVariable Long id, @RequestBody DetailDto.ScoreRequest request, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        contentService.createOrEditScore(id, tokenId, request);
+    }
+
+    @DeleteMapping("/contents/{id}/scores")
+    public void deleteScore(@PathVariable Long id, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        contentService.deleteScore(id, tokenId);
+    }
+
+    @PostMapping("/contents/{id}/interests")
+    public void setInterest(@PathVariable Long id, @RequestBody DetailDto.InterestRequest request, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        contentService.createOrEditInterest(id, tokenId, request);
+    }
+
+    @DeleteMapping("/contents/{id}/interests")
+    public void deleteInterest(@PathVariable Long id, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        contentService.deleteInterest(id, tokenId);
+    }
+
+    @PostMapping("/contents/{contentId}/comments/{commentUserId}/likes")
+    public void setCommentLike(@PathVariable Long contentId, @PathVariable Long commentUserId, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        contentService.createCommentLike(contentId, commentUserId, tokenId);
+    }
+
+    @DeleteMapping("/contents/{contentId}/comments/{commentUserId}/likes")
+    public void deleteCommentLike(@PathVariable Long contentId, @PathVariable Long commentUserId, @ApiIgnore Principal principal) {
+        Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
+        contentService.deleteCommentLike(contentId, commentUserId, tokenId);
     }
 }

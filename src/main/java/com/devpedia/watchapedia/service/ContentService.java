@@ -4,19 +4,22 @@ import com.devpedia.watchapedia.domain.Collection;
 import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.enums.ImageCategory;
 import com.devpedia.watchapedia.dto.ContentDto;
+import com.devpedia.watchapedia.dto.DetailDto;
 import com.devpedia.watchapedia.dto.ParticipantDto;
 import com.devpedia.watchapedia.dto.UserDto;
 import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.InvalidFileException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
-import com.devpedia.watchapedia.repository.ElasticSearchRepository;
+import com.devpedia.watchapedia.repository.*;
 import com.devpedia.watchapedia.repository.collection.CollectionRepository;
 import com.devpedia.watchapedia.repository.content.ContentRepository;
 import com.devpedia.watchapedia.repository.participant.ParticipantRepository;
 import com.devpedia.watchapedia.repository.tag.TagRepository;
+import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -44,6 +47,8 @@ public class ContentService {
     public static final int SEARCH_RESULT_LIST_PAGE = 1;
     public static final int SEARCH_RESULT_LIST_SIZE = 9;
 
+    public static final String CONTENT_JOB_AUTHOR = "저자";
+
     private final S3Service s3Service;
     private final UserService userService;
     private final ContentRepository contentRepository;
@@ -51,6 +56,10 @@ public class ContentService {
     private final TagRepository tagRepository;
     private final CollectionRepository collectionRepository;
     private final ElasticSearchRepository searchRepository;
+    private final CommentRepository commentRepository;
+    private final ScoreRepository scoreRepository;
+    private final InterestRepository interestRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     /**
      * 컨텐츠와 컨텐츠에 해당하는 태그, 인물, 갤러리 등을 저장한다.
@@ -265,19 +274,11 @@ public class ContentService {
      */
     public <T extends Content> List<ContentDto.ListForAward> getAwardList(ContentTypeParameter type) {
         List<Collection> awardCollection = collectionRepository.getAward(type);
-
-        List<ContentDto.AwardItem> items = new ArrayList<>();
-        for (Collection collection : awardCollection) {
-            List<Content> contentsInCollection =
-                    contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(0, AWARD_POSTER_IMAGE_COUNT));
-            items.add(new ContentDto.AwardItem(collection, contentsInCollection));
-        }
         ContentDto.ListForAward awardList = ContentDto.ListForAward.builder()
                 .type(LIST_TYPE_AWARD)
                 .title("왓챠피디아 컬렉션")
-                .list(items)
+                .list(convertCollections(awardCollection))
                 .build();
-
         return Collections.singletonList(awardList);
     }
 
@@ -395,5 +396,216 @@ public class ContentService {
         }
 
         return result;
+    }
+
+    public DetailDto.ContentDetail getContentDetail(Long contentId, Long tokenId) {
+        Optional<Content> optionalContent = contentRepository.findById(contentId);
+        Content content = optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+
+        return DetailDto.ContentDetail.builder()
+                .context(getUserContext(content, tokenId))
+                .contentInfo(getContentInfo(content))
+                .participants(getParticipants(content))
+                .comments(getCommentInfo(content.getId(), tokenId, PageRequest.of(0, 3)))
+                .galleries(getGalleries(content))
+                .scores(getScoreAnalysis(content))
+                .collections(getCollectionInfo(content.getId(), PageRequest.of(0, 5)))
+                .similar(getSimilar(content.getId(), PageRequest.of(0, 10)))
+                .build();
+    }
+
+    public DetailDto.CommentInfo getCommentInfo(Long contentId, Long userId, Pageable pageable) {
+        int count = contentRepository.countComments(contentId).intValue();
+        List<DetailDto.CommentDetail> list = contentRepository.getComments(contentId, userId != null ? userId: 0, pageable);
+        return DetailDto.CommentInfo.builder()
+                .count(count)
+                .list(list)
+                .build();
+    }
+
+    public List<ContentDto.CollectionItem> getSimilar(Long contentId, Pageable pageable) {
+        Optional<Content> optionalContent = contentRepository.findById(contentId);
+        Content content = optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+
+        String category = content.getCategory().split("/")[0];
+        List<Content> contents = contentRepository.findByCategoryContaining(category, pageable);
+        return getCollectionContentsWithScore(contents);
+    }
+
+    public DetailDto.CollectionInfo getCollectionInfo(Long contentId, Pageable pageable) {
+        Page<Collection> collections = collectionRepository.getContentCollection(contentId, pageable);
+        return DetailDto.CollectionInfo.builder()
+                .count((int) collections.getTotalElements())
+                .list(convertCollections(collections.getContent()))
+                .build();
+    }
+
+    private List<ContentDto.CollectionFourImages> convertCollections(List<Collection> collections) {
+        List<ContentDto.CollectionFourImages> list = new ArrayList<>();
+        for (Collection collection : collections) {
+            List<Content> contentsInCollection =
+                    contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(0, AWARD_POSTER_IMAGE_COUNT));
+            list.add(new ContentDto.CollectionFourImages(collection, contentsInCollection));
+        }
+        return list;
+    }
+
+    private DetailDto.ScoreAnalysis getScoreAnalysis(Content content) {
+        return contentRepository.getScoreAnalysis(content.getId());
+    }
+
+    private DetailDto.UserContext getUserContext(Content content, Long userId) {
+        if (userId == null) return null;
+        return contentRepository.getUserContext(content.getId(), userId);
+    }
+
+    private Object getContentInfo(Content content) {
+        Object result = null;
+
+        if (content instanceof Movie) {
+            result = getMovieInfo((Movie) content);
+        } else if (content instanceof Book) {
+            result = getBookInfo((Book) content);
+        } else if (content instanceof TvShow){
+            result = getTvShowInfo((TvShow) content);
+        }
+
+        return result;
+    }
+
+    private DetailDto.MovieDetail getMovieInfo(Movie movie) {
+        return DetailDto.MovieDetail.of(movie);
+    }
+
+    private DetailDto.BookDetail getBookInfo(Book book) {
+        List<Participant> authors = participantRepository.findContentParticipantHasJob(book.getId(), CONTENT_JOB_AUTHOR);
+        Participant author = authors.size() > 0 ? authors.get(0) : null;
+        return DetailDto.BookDetail.of(book, author);
+    }
+
+    private DetailDto.TvShowDetail getTvShowInfo(TvShow tvShow) {
+        return DetailDto.TvShowDetail.of(tvShow);
+    }
+
+    private List<DetailDto.ContentRole> getParticipants(Content content) {
+        return content.getParticipants().stream()
+                .map(DetailDto.ContentRole::of)
+                .collect(Collectors.toList());
+    }
+
+    private List<String> getGalleries(Content content) {
+        return content.getImages().stream()
+                .map(contentImage -> UrlUtil.getCloudFrontUrl(contentImage.getImage().getPath()))
+                .collect(Collectors.toList());
+    }
+
+    public void createOrEditComment(Long contentId, Long userId, DetailDto.CommentRequest request) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+
+        Optional<Comment> optionalComment = commentRepository.findById(new Comment.CommentId(user.getId(), content.getId()));
+        if (optionalComment.isEmpty()) {
+            Comment comment = Comment.builder()
+                    .user(user)
+                    .content(content)
+                    .description(request.getDescription())
+                    .containsSpoiler(false)
+                    .build();
+            commentRepository.save(comment);
+        } else {
+            Comment comment = optionalComment.get();
+            comment.edit(request.getDescription());
+        }
+    }
+
+    public void deleteComment(Long contentId, Long userId) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+        Optional<Comment> optionalComment = commentRepository.findById(new Comment.CommentId(user.getId(), content.getId()));
+        Comment comment = optionalComment.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        commentRepository.delete(comment);
+    }
+
+    private Content getContentIfExistOrThrow(Long contentId) {
+        Optional<Content> optionalContent = contentRepository.findById(contentId);
+        return optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+    }
+
+    public void createOrEditScore(Long contentId, Long userId, DetailDto.ScoreRequest request) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+
+        Optional<Score> optionalScore = scoreRepository.findById(new Score.ScoreId(user.getId(), content.getId()));
+        if (optionalScore.isEmpty()) {
+            Score score = Score.builder()
+                    .user(user)
+                    .content(content)
+                    .score(request.getScore())
+                    .build();
+            scoreRepository.save(score);
+        } else {
+            Score score = optionalScore.get();
+            score.edit(request.getScore());
+        }
+    }
+
+    public void createOrEditInterest(Long contentId, Long userId, DetailDto.InterestRequest request) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+
+        Optional<Interest> optionalInterest = interestRepository.findById(new Interest.InterestId(user.getId(), content.getId()));
+        if (optionalInterest.isEmpty()) {
+            Interest interest = Interest.builder()
+                    .user(user)
+                    .content(content)
+                    .state(request.getState())
+                    .build();
+            interestRepository.save(interest);
+        } else {
+            Interest interest = optionalInterest.get();
+            interest.edit(request.getState());
+        }
+    }
+
+    public void deleteScore(Long contentId, Long userId) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+        Optional<Score> optionalScore = scoreRepository.findById(new Score.ScoreId(user.getId(), content.getId()));
+        Score score = optionalScore.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        scoreRepository.delete(score);
+    }
+
+    public void deleteInterest(Long contentId, Long userId) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+        Optional<Interest> optionalInterest = interestRepository.findById(new Interest.InterestId(user.getId(), content.getId()));
+        Interest interest = optionalInterest.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        interestRepository.delete(interest);
+    }
+
+    public void createCommentLike(Long contentId, Long commentUserId, Long likeUserId) {
+        Comment comment = getCommentIfExistOrThrow(contentId, commentUserId);
+        User user = userService.getUserIfExistOrThrow(likeUserId);
+
+        Optional<CommentLike> optionalLike = commentLikeRepository.findById(new CommentLike.CommentLikeId(comment.getId(), likeUserId));
+        if (optionalLike.isEmpty()) {
+            CommentLike like = CommentLike.builder()
+                    .comment(comment)
+                    .user(user)
+                    .build();
+            commentLikeRepository.save(like);
+        }
+    }
+
+    public void deleteCommentLike(Long contentId, Long commentUserId, Long likeUserId) {
+        Comment comment = getCommentIfExistOrThrow(contentId, commentUserId);
+        Optional<CommentLike> optionalLike = commentLikeRepository.findById(new CommentLike.CommentLikeId(comment.getId(), likeUserId));
+        CommentLike commentLike = optionalLike.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        commentLikeRepository.delete(commentLike);
+    }
+
+    private Comment getCommentIfExistOrThrow(Long contentId, Long commentUserId) {
+        Optional<Comment> optionalComment = commentRepository.findById(new Comment.CommentId(commentUserId, contentId));
+        return optionalComment.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
     }
 }

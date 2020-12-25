@@ -4,6 +4,7 @@ import com.devpedia.watchapedia.domain.Collection;
 import com.devpedia.watchapedia.domain.Content;
 import com.devpedia.watchapedia.domain.Participant;
 import com.devpedia.watchapedia.domain.Tag;
+import com.devpedia.watchapedia.dto.DetailDto;
 import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
 import org.springframework.data.domain.Pageable;
 
@@ -67,4 +68,10 @@ public interface ContentCustomRepository {
      * @return unproxy 된 컨텐츠 엔티티
      */
     <T extends Content> T initializeAndUnproxy(T entity);
+
+    DetailDto.UserContext getUserContext(Long contentId, Long userId);
+
+    DetailDto.ScoreAnalysis getScoreAnalysis(Long id);
+
+    List<DetailDto.CommentDetail> getComments(Long contentId, Long userId, Pageable pageable);
 }

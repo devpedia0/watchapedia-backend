@@ -19,4 +19,6 @@ public interface ParticipantCustomRepository {
      * @return 가장 많이 참여한 인물
      */
     Participant findMostFamous(ContentTypeParameter type, String job);
+
+    List<Participant> findContentParticipantHasJob(Long contentId, String job);
 }

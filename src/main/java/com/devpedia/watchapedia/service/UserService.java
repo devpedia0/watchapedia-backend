@@ -187,7 +187,8 @@ public class UserService {
      * @param id user_id
      * @return 유저
      */
-    private User getUserIfExistOrThrow(Long id) {
+    public User getUserIfExistOrThrow(Long id) {
+        if (id == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
         Optional<User> optionalUser = userRepository.findById(id);
         User user = optionalUser.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
         if (user.getIsDeleted())
@@ -201,7 +202,8 @@ public class UserService {
      * @param email 이메일
      * @return 유저
      */
-    private User getUserIfExistOrThrow(String email) {
+    public User getUserIfExistOrThrow(String email) {
+        if (email == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
         User user = userRepository.findFirstByEmail(email);
         if (user == null || user.getIsDeleted())
             throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);

@@ -37,6 +37,10 @@ public class Interest {
         this.state = state;
     }
 
+    public void edit(InterestState state) {
+        if (state != null) this.state = state;
+    }
+
     @Embeddable
     @Data
     @NoArgsConstructor

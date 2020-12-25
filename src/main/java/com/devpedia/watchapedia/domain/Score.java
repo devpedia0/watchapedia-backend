@@ -34,6 +34,10 @@ public class Score {
         this.score = score;
     }
 
+    public void edit(Double score) {
+        if (score != null) this.score = score;
+    }
+
     public void setContent(Content content) {
         this.content = content;
     }
