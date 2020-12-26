@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 
 import javax.persistence.EntityManager;
 
+import java.util.List;
+
 import static com.devpedia.watchapedia.domain.QContent.content;
 import static com.devpedia.watchapedia.domain.QContentParticipant.contentParticipant;
 import static com.devpedia.watchapedia.domain.QParticipant.participant;
@@ -31,5 +33,19 @@ public class ParticipantCustomRepositoryImpl implements ParticipantCustomReposit
                 .groupBy(contentParticipant.participant.id)
                 .orderBy(contentParticipant.participant.id.count().desc())
                 .fetchFirst();
+    }
+
+    @Override
+    public List<Participant> findContentParticipantHasJob(Long contentId, String job) {
+        return query
+                .select(participant)
+                .from(contentParticipant)
+                .join(contentParticipant.participant, participant)
+                .join(contentParticipant.content, content)
+                .where(
+                        content.id.eq(contentId),
+                        participant.job.eq(job)
+                )
+                .fetch();
     }
 }
