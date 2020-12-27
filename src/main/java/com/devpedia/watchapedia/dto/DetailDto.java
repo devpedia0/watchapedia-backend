@@ -38,6 +38,7 @@ public class DetailDto {
     public static class MovieDetail {
         private String type;
         private String mainTitle;
+        private String posterImagePath;
         private String category;
         private String description;
         private LocalDate productionDate;
@@ -51,6 +52,7 @@ public class DetailDto {
             return MovieDetail.builder()
                     .type(movie.getDtype())
                     .mainTitle(movie.getMainTitle())
+                    .posterImagePath(UrlUtil.getCloudFrontUrl(movie.getPosterImage().getPath()))
                     .category(movie.getCategory())
                     .description(movie.getDescription())
                     .productionDate(movie.getProductionDate())
@@ -71,6 +73,7 @@ public class DetailDto {
     public static class BookDetail {
         private String type;
         private String mainTitle;
+        private String posterImagePath;
         private String category;
         private String description;
         private LocalDate productionDate;
@@ -85,6 +88,7 @@ public class DetailDto {
             return BookDetail.builder()
                     .type(book.getDtype())
                     .mainTitle(book.getMainTitle())
+                    .posterImagePath(UrlUtil.getCloudFrontUrl(book.getPosterImage().getPath()))
                     .category(book.getCategory())
                     .description(book.getDescription())
                     .productionDate(book.getProductionDate())
@@ -106,6 +110,7 @@ public class DetailDto {
     public static class TvShowDetail {
         private String type;
         private String mainTitle;
+        private String posterImagePath;
         private String category;
         private String description;
         private LocalDate productionDate;
@@ -118,6 +123,7 @@ public class DetailDto {
             return TvShowDetail.builder()
                     .type(tvShow.getDtype())
                     .mainTitle(tvShow.getMainTitle())
+                    .posterImagePath(UrlUtil.getCloudFrontUrl(tvShow.getPosterImage().getPath()))
                     .category(tvShow.getCategory())
                     .description(tvShow.getDescription())
                     .productionDate(tvShow.getProductionDate())

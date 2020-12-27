@@ -69,9 +69,42 @@ public interface ContentCustomRepository {
      */
     <T extends Content> T initializeAndUnproxy(T entity);
 
+    /**
+     * 해당 컨텐츠에 대한 유저의 문맥 정보를 가져온다.
+     * - 컨텐츠에 관심 상태
+     * - 해당 유저의 컨텐츠 평점
+     * - 남긴 코멘트 내용
+     * @param contentId 컨텐츠 id
+     * @param userId 유저 id
+     * @return 유저 문맥 정보
+     */
     DetailDto.UserContext getUserContext(Long contentId, Long userId);
 
+    /**
+     * 해당 컨텐츠의 평점 통계 데이터를 가져온다.
+     * - 평점 평균
+     * - 총 평점 개수
+     * - 점수 별 분포도
+     * @param id 컨텐츠 id
+     * @return 평점 통계 정보
+     */
     DetailDto.ScoreAnalysis getScoreAnalysis(Long id);
 
+    /**
+     * 컨텐츠에 달린 코멘트 리스트를 가져온다.
+     * @param contentId 컨텐츠 id
+     * @param userId 유저 id(코멘트 좋아요 눌렀는지 확인용)
+     * @param pageable pageable
+     * @return 코멘트 리스트
+     */
     List<DetailDto.CommentDetail> getComments(Long contentId, Long userId, Pageable pageable);
+
+    /**
+     * 코멘트의 상세정보를 가져온다.
+     * @param contentId 컨텐츠 id
+     * @param commentUserId 코멘트 남긴 유저 id
+     * @param contextUserId 토큰 유저 id(코멘트 좋아요 눌렀는지 확인용)
+     * @return 코멘트 상세 정보
+     */
+    DetailDto.CommentDetail getComment(Long contentId, Long commentUserId, Long contextUserId);
 }

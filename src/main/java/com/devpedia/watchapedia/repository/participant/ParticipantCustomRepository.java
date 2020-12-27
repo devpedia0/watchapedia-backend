@@ -20,5 +20,11 @@ public interface ParticipantCustomRepository {
      */
     Participant findMostFamous(ContentTypeParameter type, String job);
 
+    /**
+     * 해당 컨텐츠에 해당 직업을 가진 참여자 리스트를 구한다.
+     * @param contentId 컨텐츠 id
+     * @param job 직업
+     * @return 참여자 리스트
+     */
     List<Participant> findContentParticipantHasJob(Long contentId, String job);
 }

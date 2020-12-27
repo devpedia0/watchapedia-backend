@@ -14,7 +14,7 @@ public interface ContentRepository extends JpaRepository<Content, Long>, Content
     @Query("select count(s) from Score s")
     Long countTotalScores();
 
-    List<Content> findByCategoryContaining(String category, Pageable pageable);
+    List<Content> findByCategoryContainingAndDtype(String category, String dtype, Pageable pageable);
 
     @Query("select count(c) from Comment c where c.id.contentId = :id")
     Long countComments(@Param("id") Long contentId);
