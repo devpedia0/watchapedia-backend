@@ -273,4 +273,64 @@ public class ContentCustomRepositoryImpl implements ContentCustomRepository {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public DetailDto.CommentDetail getComment(Long contentId, Long commentUserId, Long contextUserId) {
+        NumberPath<Long> replyCount = Expressions.numberPath(Long.class, "replyCount");
+        NumberPath<Long> likeCount = Expressions.numberPath(Long.class, "likeCount");
+        NumberPath<Long> isLiked = Expressions.numberPath(Long.class, "isLiked");
+
+        Tuple result = query
+                .select(
+                        user.id,
+                        user.name,
+                        comment.description,
+                        comment.containsSpoiler,
+                        as(select(reply.id.count())
+                                .from(reply)
+                                .where(reply.comment.id.contentId.eq(comment.id.contentId),
+                                        reply.comment.id.userId.eq(comment.id.userId)), replyCount),
+                        as(select(commentLike.id.likeUserId.count())
+                                .from(commentLike)
+                                .where(commentLike.comment.id.contentId.eq(comment.id.contentId),
+                                        commentLike.comment.id.userId.eq(comment.id.userId)), likeCount),
+                        interest.state,
+                        score1.score,
+                        as(select(commentLike.id.likeUserId)
+                                .from(commentLike)
+                                .where(commentLike.comment.id.contentId.eq(comment.id.contentId),
+                                        commentLike.comment.id.userId.eq(comment.id.userId),
+                                        commentLike.id.likeUserId.eq(contextUserId)), isLiked)
+                )
+                .from(comment)
+                .join(comment.content, content)
+                .join(comment.user, user)
+                .leftJoin(interest).on(
+                        interest.id.userId.eq(user.id),
+                        interest.id.contentId.eq(content.id)
+                )
+                .leftJoin(score1).on(
+                        score1.id.userId.eq(user.id),
+                        score1.id.contentId.eq(content.id)
+                )
+                .where(
+                        comment.id.contentId.eq(contentId),
+                        comment.id.userId.eq(commentUserId)
+                )
+                .fetchOne();
+
+        if (result == null) return null;
+
+        return DetailDto.CommentDetail.builder()
+                .userId(result.get(user.id))
+                .userName(result.get(user.name))
+                .description(result.get(comment.description))
+                .isSpoiler(result.get(comment.containsSpoiler))
+                .replyCount(result.get(replyCount))
+                .likeCount(result.get(likeCount))
+                .interestState(result.get(interest.state))
+                .score(result.get(score1.score))
+                .isLiked(result.get(isLiked) != null)
+                .build();
+    }
 }

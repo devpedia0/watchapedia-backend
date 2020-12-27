@@ -51,6 +51,12 @@ public class ParticipantService {
         participantRepository.save(participant);
     }
 
+    /**
+     * 참여자를 이름으로 검색한다.
+     * @param query 참여자 이름
+     * @param pageable pageable
+     * @return 참여자 리스트
+     */
     public List<ParticipantDto.ParticipantInfo> searchWithPaging(String query, Pageable pageable) {
         List<Participant> list = participantRepository.findByNameContaining(query, pageable);
 
@@ -59,18 +65,33 @@ public class ParticipantService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 참여자 정보를 수정한다.
+     * @param id 참여자 id
+     * @param request 참여자 수정 정보
+     */
     public void update(Long id, ParticipantDto.ParticipantUpdateRequest request) {
         Optional<Participant> optionalParticipant = participantRepository.findById(id);
         Participant participant = optionalParticipant.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
         participant.updateInfo(request.getName(), request.getJob(), request.getDescription());
     }
 
+    /**
+     * 참여자 정보를 삭제한다.
+     * @param id 참여자 id
+     */
     public void delete(Long id) {
         Optional<Participant> optionalParticipant = participantRepository.findById(id);
         Participant participant = optionalParticipant.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
         participantRepository.delete(participant);
     }
 
+    /**
+     * 참여자 상세정보와 참여자가 참여한 컨텐츠 리스트를 구한다.
+     * @param id 참여자 id
+     * @param pageable pageable(참여한 컨텐츠)
+     * @return 참여자 정보
+     */
     public ParticipantDto.ParticipantInfo getParticipantInfo(Long id, Pageable pageable) {
         Optional<Participant> optionalParticipant = participantRepository.findById(id);
         Participant participant = optionalParticipant.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
@@ -87,6 +108,12 @@ public class ParticipantService {
                 .build();
     }
 
+    /**
+     * 참여자가 참여한 컨텐츠 리스트를 구한다.
+     * @param id 참여자 id
+     * @param pageable pageable
+     * @return 컨텐츠 dto 리스트
+     */
     private List<ContentDto.CollectionItem> getParticipantContents(Long id, Pageable pageable) {
         List<Content> contents = contentRepository.findContentByParticipant(id, pageable);
         return contentService.getCollectionContentsWithScore(contents);

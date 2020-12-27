@@ -49,6 +49,10 @@ public class ContentService {
 
     public static final String CONTENT_JOB_AUTHOR = "저자";
 
+    public static final int DETAIL_COMMENT_PAGE_SIZE = 3;
+    public static final int DETAIL_COLLECTION_PAGE_SIZE = 5;
+    public static final int DETAIL_SIMILAR_PAGE_SIZE = 12;
+
     private final S3Service s3Service;
     private final UserService userService;
     private final ContentRepository contentRepository;
@@ -398,6 +402,12 @@ public class ContentService {
         return result;
     }
 
+    /**
+     * 컨텐츠 상세 정보를 조회한다.
+     * @param contentId 컨텐츠 id
+     * @param tokenId 토큰 유저 id
+     * @return 컨텐츠 상세 정보
+     */
     public DetailDto.ContentDetail getContentDetail(Long contentId, Long tokenId) {
         Optional<Content> optionalContent = contentRepository.findById(contentId);
         Content content = optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
@@ -406,14 +416,22 @@ public class ContentService {
                 .context(getUserContext(content, tokenId))
                 .contentInfo(getContentInfo(content))
                 .participants(getParticipants(content))
-                .comments(getCommentInfo(content.getId(), tokenId, PageRequest.of(0, 3)))
+                .comments(getCommentInfo(content.getId(), tokenId, PageRequest.of(0, DETAIL_COMMENT_PAGE_SIZE)))
                 .galleries(getGalleries(content))
                 .scores(getScoreAnalysis(content))
-                .collections(getCollectionInfo(content.getId(), PageRequest.of(0, 5)))
-                .similar(getSimilar(content.getId(), PageRequest.of(0, 10)))
+                .collections(getCollectionInfo(content.getId(), PageRequest.of(0, DETAIL_COLLECTION_PAGE_SIZE)))
+                .similar(getSimilar(content.getId(), PageRequest.of(0, DETAIL_SIMILAR_PAGE_SIZE)))
                 .build();
     }
 
+    /**
+     * 컨텐츠 상세 페이지의 초기 코멘트 리스트와
+     * 해당 컨텐츠의 총 코멘트 개수를 구한다.
+     * @param contentId 컨텐츠 id
+     * @param userId 토큰 유저 id
+     * @param pageable pageable
+     * @return 컨텐츠 코멘트 정보
+     */
     public DetailDto.CommentInfo getCommentInfo(Long contentId, Long userId, Pageable pageable) {
         int count = contentRepository.countComments(contentId).intValue();
         List<DetailDto.CommentDetail> list = contentRepository.getComments(contentId, userId != null ? userId: 0, pageable);
@@ -423,15 +441,28 @@ public class ContentService {
                 .build();
     }
 
+    /**
+     * 해당 컨텐츠와 유사한 컨텐츠 리스트를 구한다.
+     * 현재는 카테고리가 동일한 컨텐츠를 구한다.
+     * @param contentId 컨텐츠 id
+     * @param pageable pageable
+     * @return 유사한 컨텐츠 리스트
+     */
     public List<ContentDto.CollectionItem> getSimilar(Long contentId, Pageable pageable) {
         Optional<Content> optionalContent = contentRepository.findById(contentId);
         Content content = optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
 
         String category = content.getCategory().split("/")[0];
-        List<Content> contents = contentRepository.findByCategoryContaining(category, pageable);
+        List<Content> contents = contentRepository.findByCategoryContainingAndDtype(category, content.getDtype(), pageable);
         return getCollectionContentsWithScore(contents);
     }
 
+    /**
+     * 해당 컨텐츠를 포함하는 컬렉션 개수와 리스트를 구한다.
+     * @param contentId 컨텐츠 id
+     * @param pageable pageable
+     * @return 컬렉션 정보
+     */
     public DetailDto.CollectionInfo getCollectionInfo(Long contentId, Pageable pageable) {
         Page<Collection> collections = collectionRepository.getContentCollection(contentId, pageable);
         return DetailDto.CollectionInfo.builder()
@@ -440,6 +471,11 @@ public class ContentService {
                 .build();
     }
 
+    /**
+     * 각 컬렉션 별 포함한 컨텐츠 4개의 포스터 정보를 구해서 리턴한다.
+     * @param collections 컬렉션 리스트
+     * @return 포함된 컨텐츠 4개의 포스터 정보
+     */
     private List<ContentDto.CollectionFourImages> convertCollections(List<Collection> collections) {
         List<ContentDto.CollectionFourImages> list = new ArrayList<>();
         for (Collection collection : collections) {
@@ -450,16 +486,32 @@ public class ContentService {
         return list;
     }
 
-    private DetailDto.ScoreAnalysis getScoreAnalysis(Content content) {
+    /**
+     * 컨텐츠의 평점 관련 통계 정보를 반환한다.
+     * @param content 컨텐츠
+     * @return 평점 정보
+     */
+    public DetailDto.ScoreAnalysis getScoreAnalysis(Content content) {
         return contentRepository.getScoreAnalysis(content.getId());
     }
 
+    /**
+     * 해당 유저의 해당 컨텐츠 관련 활동 정보를 반환한다.
+     * @param content 컨텐츠
+     * @param userId 유저 id
+     * @return 활동 정보
+     */
     private DetailDto.UserContext getUserContext(Content content, Long userId) {
         if (userId == null) return null;
         return contentRepository.getUserContext(content.getId(), userId);
     }
 
-    private Object getContentInfo(Content content) {
+    /**
+     * 컨텐츠 엔티티로부터 각 형태에 맞는 컨텐츠 정보를 반환한다.
+     * @param content 컨텐츠
+     * @return 컨텐츠 정보
+     */
+    public Object getContentInfo(Content content) {
         Object result = null;
 
         if (content instanceof Movie) {
@@ -473,32 +525,65 @@ public class ContentService {
         return result;
     }
 
+    /**
+     * 영화의 상세 정보를 구한다.
+     * @param movie 영화
+     * @return 영화 상세 정보
+     */
     private DetailDto.MovieDetail getMovieInfo(Movie movie) {
         return DetailDto.MovieDetail.of(movie);
     }
 
+    /**
+     * 책의 상세 정보를 구한다.
+     * 책의 경우 저자의 정보도 같이 반환함.
+     * @param book 책
+     * @return 책 상세 정보
+     */
     private DetailDto.BookDetail getBookInfo(Book book) {
         List<Participant> authors = participantRepository.findContentParticipantHasJob(book.getId(), CONTENT_JOB_AUTHOR);
         Participant author = authors.size() > 0 ? authors.get(0) : null;
         return DetailDto.BookDetail.of(book, author);
     }
 
+    /**
+     * 티비프로그램 상세 정보를 구한다.
+     * @param tvShow 티비프로그램
+     * @return 티비 상세 정보
+     */
     private DetailDto.TvShowDetail getTvShowInfo(TvShow tvShow) {
         return DetailDto.TvShowDetail.of(tvShow);
     }
 
-    private List<DetailDto.ContentRole> getParticipants(Content content) {
+    /**
+     * 해당 컨텐츠에 참여한 참여자 리스트를 구한다.
+     * @param content 컨텐츠
+     * @return 참여자 리스트
+     */
+    public List<DetailDto.ContentRole> getParticipants(Content content) {
         return content.getParticipants().stream()
                 .map(DetailDto.ContentRole::of)
                 .collect(Collectors.toList());
     }
 
-    private List<String> getGalleries(Content content) {
+    /**
+     * 해당 컨텐츠의 갤러리 이미지 리스트를 구한다.
+     * @param content 컨텐츠
+     * @return 갤러리 이미지 리스트
+     */
+    public List<String> getGalleries(Content content) {
         return content.getImages().stream()
                 .map(contentImage -> UrlUtil.getCloudFrontUrl(contentImage.getImage().getPath()))
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 코멘트를 생성하거나 수정한다,
+     * 코멘트가 존재하지 않으면 생성, 이미 존재하면 수정하여 적용함.
+     * @param contentId 컨텐츠 Id
+     * @param userId 코멘트 유저 id
+     * @param request 코멘트 요청(내용)
+     */
     public void createOrEditComment(Long contentId, Long userId, DetailDto.CommentRequest request) {
         User user = userService.getUserIfExistOrThrow(userId);
         Content content = getContentIfExistOrThrow(contentId);
@@ -518,6 +603,11 @@ public class ContentService {
         }
     }
 
+    /**
+     * 코멘트를 조회 후 존재하면 삭제한다.
+     * @param contentId 컨텐츠 id
+     * @param userId 코멘트 유저 id
+     */
     public void deleteComment(Long contentId, Long userId) {
         User user = userService.getUserIfExistOrThrow(userId);
         Content content = getContentIfExistOrThrow(contentId);
@@ -526,11 +616,23 @@ public class ContentService {
         commentRepository.delete(comment);
     }
 
+    /**
+     * 컨텐츠를 가져오고 존재하지 않으면 Exception 을 던진다.
+     * @param contentId 컨텐츠 id
+     * @return 컨텐츠
+     */
     private Content getContentIfExistOrThrow(Long contentId) {
         Optional<Content> optionalContent = contentRepository.findById(contentId);
         return optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
     }
 
+    /**
+     * 평점을 생성하거나 수정한다,
+     * 평점이 존재하지 않으면 생성, 이미 존재하면 수정하여 적용함.
+     * @param contentId 컨텐츠 Id
+     * @param userId 평점 유저 id
+     * @param request 평점 요청(점수)
+     */
     public void createOrEditScore(Long contentId, Long userId, DetailDto.ScoreRequest request) {
         User user = userService.getUserIfExistOrThrow(userId);
         Content content = getContentIfExistOrThrow(contentId);
@@ -549,6 +651,13 @@ public class ContentService {
         }
     }
 
+    /**
+     * 관심 정보를 생성하거나 수정한다,
+     * 관심 정보가 존재하지 않으면 생성, 이미 존재하면 수정하여 적용함.
+     * @param contentId 컨텐츠 Id
+     * @param userId 관심 유저 id
+     * @param request 관심 요청(관심 상태)
+     */
     public void createOrEditInterest(Long contentId, Long userId, DetailDto.InterestRequest request) {
         User user = userService.getUserIfExistOrThrow(userId);
         Content content = getContentIfExistOrThrow(contentId);
@@ -567,6 +676,11 @@ public class ContentService {
         }
     }
 
+    /**
+     * 유저의 평점 정보를 삭제한다.
+     * @param contentId 컨텐츠 id
+     * @param userId 평점 유저 id
+     */
     public void deleteScore(Long contentId, Long userId) {
         User user = userService.getUserIfExistOrThrow(userId);
         Content content = getContentIfExistOrThrow(contentId);
@@ -575,6 +689,11 @@ public class ContentService {
         scoreRepository.delete(score);
     }
 
+    /**
+     * 유저의 관심 정보를 삭제한다.
+     * @param contentId 컨텐츠 id
+     * @param userId 관심 유저 id
+     */
     public void deleteInterest(Long contentId, Long userId) {
         User user = userService.getUserIfExistOrThrow(userId);
         Content content = getContentIfExistOrThrow(contentId);
@@ -583,6 +702,12 @@ public class ContentService {
         interestRepository.delete(interest);
     }
 
+    /**
+     * 코멘트에 좋아요 표시를 한다.
+     * @param contentId 컨텐츠 id
+     * @param commentUserId 코멘트 유저 id
+     * @param likeUserId 좋아요 유저 id
+     */
     public void createCommentLike(Long contentId, Long commentUserId, Long likeUserId) {
         Comment comment = getCommentIfExistOrThrow(contentId, commentUserId);
         User user = userService.getUserIfExistOrThrow(likeUserId);
@@ -597,6 +722,12 @@ public class ContentService {
         }
     }
 
+    /**
+     * 코멘트에 좋아요를 삭제한다.
+     * @param contentId 컨텐츠 id
+     * @param commentUserId 코멘트 유저 id
+     * @param likeUserId 좋아요 유저 id
+     */
     public void deleteCommentLike(Long contentId, Long commentUserId, Long likeUserId) {
         Comment comment = getCommentIfExistOrThrow(contentId, commentUserId);
         Optional<CommentLike> optionalLike = commentLikeRepository.findById(new CommentLike.CommentLikeId(comment.getId(), likeUserId));
@@ -604,8 +735,27 @@ public class ContentService {
         commentLikeRepository.delete(commentLike);
     }
 
+    /**
+     * 코멘트가 존재하면 가져오고 없으면 Exception
+     * @param contentId 컨텐츠 id
+     * @param commentUserId 코멘트 유저 id
+     * @return 코멘트
+     */
     private Comment getCommentIfExistOrThrow(Long contentId, Long commentUserId) {
         Optional<Comment> optionalComment = commentRepository.findById(new Comment.CommentId(commentUserId, contentId));
         return optionalComment.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+    }
+
+    /**
+     * 코멘트 상세 정보를 가져온다.
+     * @param contentId 컨텐츠 id
+     * @param commentUserId 코멘트 유저 id
+     * @param tokenId 토큰 유저
+     * @return 코멘트 상세 정보
+     */
+    public DetailDto.CommentDetail getCommentDetail(Long contentId, Long commentUserId, Long tokenId) {
+        DetailDto.CommentDetail comment = contentRepository.getComment(contentId, commentUserId, tokenId);
+        if (comment == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        return comment;
     }
 }
