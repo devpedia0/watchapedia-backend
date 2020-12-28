@@ -16,6 +16,9 @@ spring:
     multipart:
       max-file-size: 2MB
       max-request-size: 15MB
+  cache:
+    redis:
+      time-to-live: 43200000
 
 cloud:
   aws:

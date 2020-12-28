@@ -489,7 +489,7 @@ class ContentServiceTest {
     }
 
     @Test
-    public void searchByType_MovieContent_SearchMovieItem() throws Exception {
+    public void searchByType_MovieContent_SearchItem() throws Exception {
         // given
         Movie movie = spy(ContentMother.movie().build());
 
@@ -499,10 +499,10 @@ class ContentServiceTest {
                 .willReturn(List.of(movie));
 
         // when
-        List<Object> list = contentService.searchByType(ContentTypeParameter.MOVIES, "movie", 1, 10);
+        List<ContentDto.SearchItem> list = contentService.searchByType(ContentTypeParameter.MOVIES, "movie", 1, 10);
 
         // then
         assertThat(list).hasSize(1);
-        assertThat(list.get(0)).isInstanceOf(ContentDto.SearchMovieItem.class);
+        assertThat(list.get(0)).isInstanceOf(ContentDto.SearchItem.class);
     }
 }

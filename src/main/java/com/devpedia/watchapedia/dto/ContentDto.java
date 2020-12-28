@@ -5,6 +5,7 @@ import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,7 +99,7 @@ public class ContentDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class CollectionFourImages {
+    public static class CollectionFourImages implements Serializable {
         private Long id;
         private String title;
         private List<String> images;
@@ -118,7 +119,7 @@ public class ContentDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class ListForAward {
+    public static class ListForAward implements Serializable{
         private String type;
         private String title;
         private List<CollectionFourImages> list;
@@ -142,7 +143,7 @@ public class ContentDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class CollectionItem {
+    public static class CollectionItem implements Serializable {
         private Long id;
         private String posterImagePath;
         private String mainTitle;
@@ -193,11 +194,11 @@ public class ContentDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class SearchResult {
-        private List<Object> topResults;
-        private List<Object> movies;
-        private List<Object> books;
-        private List<Object> tvShows;
+    public static class SearchResult implements Serializable {
+        private List<SearchItem> topResults;
+        private List<SearchItem> movies;
+        private List<SearchItem> books;
+        private List<SearchItem> tvShows;
         private List<UserDto.SearchUserItem> users;
     }
 
@@ -206,7 +207,7 @@ public class ContentDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class SearchMovieItem {
+    public static class SearchItem implements Serializable {
         private Long id;
         private String posterImagePath;
         private String mainTitle;
@@ -214,10 +215,11 @@ public class ContentDto {
         private String countryCode;
         private Boolean isWatchaContent;
         private Boolean isNetflixContent;
+        private String author;
         private String dtype;
 
-        public static SearchMovieItem of(Movie movie) {
-            return SearchMovieItem.builder()
+        public static SearchItem of(Movie movie) {
+            return SearchItem.builder()
                     .id(movie.getId())
                     .posterImagePath(UrlUtil.getCloudFrontUrl(movie.getPosterImage().getPath()))
                     .mainTitle(movie.getMainTitle())
@@ -225,28 +227,13 @@ public class ContentDto {
                     .countryCode(movie.getCountryCode())
                     .isWatchaContent(movie.getIsWatchaContent())
                     .isNetflixContent(movie.getIsNetflixContent())
+                    .author(null)
                     .dtype(movie.getDtype())
                     .build();
         }
-    }
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class SearchTvShowItem {
-        private Long id;
-        private String posterImagePath;
-        private String mainTitle;
-        private LocalDate productionDate;
-        private String countryCode;
-        private Boolean isWatchaContent;
-        private Boolean isNetflixContent;
-        private String dtype;
-
-        public static SearchTvShowItem of(TvShow tvShow) {
-            return SearchTvShowItem.builder()
+        public static SearchItem of(TvShow tvShow) {
+            return SearchItem.builder()
                     .id(tvShow.getId())
                     .posterImagePath(UrlUtil.getCloudFrontUrl(tvShow.getPosterImage().getPath()))
                     .mainTitle(tvShow.getMainTitle())
@@ -254,34 +241,23 @@ public class ContentDto {
                     .countryCode(tvShow.getCountryCode())
                     .isWatchaContent(tvShow.getIsWatchaContent())
                     .isNetflixContent(tvShow.getIsNetflixContent())
+                    .author(null)
                     .dtype(tvShow.getDtype())
                     .build();
         }
-    }
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class SearchBookItem {
-        private Long id;
-        private String posterImagePath;
-        private String mainTitle;
-        private LocalDate productionDate;
-        private String author;
-        private String dtype;
-
-        public static SearchBookItem of(Book book) {
-            return SearchBookItem.builder()
+        public static SearchItem of(Book book) {
+            return SearchItem.builder()
                     .id(book.getId())
                     .posterImagePath(UrlUtil.getCloudFrontUrl(book.getPosterImage().getPath()))
                     .mainTitle(book.getMainTitle())
                     .productionDate(book.getProductionDate())
+                    .countryCode(null)
+                    .isWatchaContent(null)
+                    .isNetflixContent(null)
                     .author(book.getParticipants().get(0).getParticipant().getName())
                     .dtype(book.getDtype())
                     .build();
         }
     }
-
 }

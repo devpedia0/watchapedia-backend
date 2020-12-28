@@ -10,6 +10,7 @@ import com.devpedia.watchapedia.dto.enums.RatingContentOrder;
 import lombok.*;
 
 import javax.validation.constraints.*;
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -141,7 +142,7 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class ActionCounts {
+    public static class ActionCounts implements Serializable {
         private Integer ratingCount;
         private Integer wishCount;
         private Integer watchingCount;
@@ -267,7 +268,7 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class SearchUserItem {
+    public static class SearchUserItem implements Serializable {
         private Long id;
         private String name;
         private String description;

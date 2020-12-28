@@ -9,6 +9,7 @@ import lombok.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PositiveOrZero;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +36,7 @@ public class DetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class MovieDetail {
+    public static class MovieDetail implements Serializable {
         private String type;
         private String mainTitle;
         private String posterImagePath;
@@ -70,7 +71,7 @@ public class DetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class BookDetail {
+    public static class BookDetail implements Serializable {
         private String type;
         private String mainTitle;
         private String posterImagePath;
@@ -107,7 +108,7 @@ public class DetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class TvShowDetail {
+    public static class TvShowDetail implements Serializable {
         private String type;
         private String mainTitle;
         private String posterImagePath;
@@ -140,7 +141,7 @@ public class DetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class ContentRole {
+    public static class ContentRole implements Serializable {
         private Long id;
         private String name;
         private String profileImagePath;
@@ -204,7 +205,7 @@ public class DetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class CollectionInfo {
+    public static class CollectionInfo implements Serializable {
         private Integer count;
         private List<ContentDto.CollectionFourImages> list;
     }

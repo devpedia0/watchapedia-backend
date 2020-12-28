@@ -9,7 +9,6 @@ import com.devpedia.watchapedia.repository.content.ContentRepository;
 import com.devpedia.watchapedia.service.ContentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -128,7 +127,7 @@ public class ContentController {
      * @return 검색 결과(SearchMovieItem, SearchTvShowItem, SearchBookItem)
      */
     @GetMapping("/public/searches/{contentType}")
-    public List<Object> searchByType(@PathVariable ContentTypeParameter contentType,
+    public List<ContentDto.SearchItem> searchByType(@PathVariable ContentTypeParameter contentType,
                                      @RequestParam @NotBlank String query,
                                      @RequestParam @Positive int page,
                                      @RequestParam @Min(1)@Max(20) int size) {
