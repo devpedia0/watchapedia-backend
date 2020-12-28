@@ -19,6 +19,8 @@ import com.devpedia.watchapedia.repository.tag.TagRepository;
 import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +28,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,6 +56,9 @@ public class ContentService {
     public static final int DETAIL_COMMENT_PAGE_SIZE = 3;
     public static final int DETAIL_COLLECTION_PAGE_SIZE = 5;
     public static final int DETAIL_SIMILAR_PAGE_SIZE = 12;
+
+    @Resource
+    private ContentService self;
 
     private final S3Service s3Service;
     private final UserService userService;
@@ -276,7 +283,8 @@ public class ContentService {
      * @param type 컨텐츠 종류 Enum
      * @return 왓챠피디아 컬렉션 리스트
      */
-    public <T extends Content> List<ContentDto.ListForAward> getAwardList(ContentTypeParameter type) {
+    @Cacheable(value = "award", key = "#type.dtype")
+    public List<ContentDto.ListForAward> getAwardList(ContentTypeParameter type) {
         List<Collection> awardCollection = collectionRepository.getAward(type);
         ContentDto.ListForAward awardList = ContentDto.ListForAward.builder()
                 .type(LIST_TYPE_AWARD)
@@ -349,12 +357,13 @@ public class ContentService {
      * @param query 검색어
      * @return 통합 검색 결과
      */
+    @Cacheable(value = "integration-search", key = "#query", unless = "#result.topResults.size() < 5")
     public ContentDto.SearchResult getSearchResult(String query) throws IOException {
         Map<String, List<Long>> ids = searchRepository.searchAllContentsReturnIds(query, SEARCH_RESULT_LIST_PAGE, SEARCH_RESULT_LIST_SIZE);
-        List<Object> topList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TOP_RESULT));
-        List<Object> movieList = getSearchList(ids.get(ElasticSearchRepository.TYPE_MOVIE));
-        List<Object> tvShowList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TV_SHOW));
-        List<Object> bookList = getSearchList(ids.get(ElasticSearchRepository.TYPE_BOOK));
+        List<ContentDto.SearchItem> topList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TOP_RESULT));
+        List<ContentDto.SearchItem> movieList = getSearchList(ids.get(ElasticSearchRepository.TYPE_MOVIE));
+        List<ContentDto.SearchItem> tvShowList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TV_SHOW));
+        List<ContentDto.SearchItem> bookList = getSearchList(ids.get(ElasticSearchRepository.TYPE_BOOK));
         List<UserDto.SearchUserItem> userList = userService.getUserSearchList(query, PageRequest.of(SEARCH_RESULT_LIST_PAGE - 1, SEARCH_RESULT_LIST_SIZE));
 
         return ContentDto.SearchResult.builder()
@@ -374,7 +383,7 @@ public class ContentService {
      * @param size 사이즈
      * @return 검색 결과
      */
-    public List<Object> searchByType(ContentTypeParameter typeParameter, String query, int page, int size) throws IOException {
+    public List<ContentDto.SearchItem> searchByType(ContentTypeParameter typeParameter, String query, int page, int size) throws IOException {
         List<Long> ids = searchRepository.searchTypeContentsReturnIds(typeParameter.getDtype(), query, page, size);
         return getSearchList(ids);
     }
@@ -386,17 +395,17 @@ public class ContentService {
      * @param ids 컨텐츠 ID 리스트
      * @return 검색 결과 DTO 리스트(SearchMovieItem, SearchTvShowItem, SearchBookItem)
      */
-    private List<Object> getSearchList(List<Long> ids) {
+    private List<ContentDto.SearchItem> getSearchList(List<Long> ids) {
         List<Content> contents = contentRepository.findAllById(ids);
-        List<Object> result = new ArrayList<>();
+        List<ContentDto.SearchItem> result = new ArrayList<>();
 
         for (Content content : contents) {
             if (content instanceof Movie)
-                result.add(ContentDto.SearchMovieItem.of((Movie) content));
+                result.add(ContentDto.SearchItem.of((Movie) content));
             else if (content instanceof TvShow)
-                result.add(ContentDto.SearchTvShowItem.of((TvShow) content));
+                result.add(ContentDto.SearchItem.of((TvShow) content));
             else if (content instanceof Book)
-                result.add(ContentDto.SearchBookItem.of((Book) content));
+                result.add(ContentDto.SearchItem.of((Book) content));
         }
 
         return result;
@@ -414,13 +423,13 @@ public class ContentService {
 
         return DetailDto.ContentDetail.builder()
                 .context(getUserContext(content, tokenId))
-                .contentInfo(getContentInfo(content))
-                .participants(getParticipants(content))
+                .contentInfo(self.getContentInfo(content))
+                .participants(self.getParticipants(content))
                 .comments(getCommentInfo(content.getId(), tokenId, PageRequest.of(0, DETAIL_COMMENT_PAGE_SIZE)))
-                .galleries(getGalleries(content))
+                .galleries(self.getGalleries(content))
                 .scores(getScoreAnalysis(content))
-                .collections(getCollectionInfo(content.getId(), PageRequest.of(0, DETAIL_COLLECTION_PAGE_SIZE)))
-                .similar(getSimilar(content.getId(), PageRequest.of(0, DETAIL_SIMILAR_PAGE_SIZE)))
+                .collections(self.getCollectionInfo(content.getId(), PageRequest.of(0, DETAIL_COLLECTION_PAGE_SIZE)))
+                .similar(self.getSimilar(content.getId(), PageRequest.of(0, DETAIL_SIMILAR_PAGE_SIZE)))
                 .build();
     }
 
@@ -448,6 +457,8 @@ public class ContentService {
      * @param pageable pageable
      * @return 유사한 컨텐츠 리스트
      */
+    @Cacheable(value = "detail-similar", key = "#contentId",
+            condition = "#pageable.pageNumber == 0 and #pageable.pageSize == T(com.devpedia.watchapedia.service.ContentService).DETAIL_SIMILAR_PAGE_SIZE")
     public List<ContentDto.CollectionItem> getSimilar(Long contentId, Pageable pageable) {
         Optional<Content> optionalContent = contentRepository.findById(contentId);
         Content content = optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
@@ -463,6 +474,8 @@ public class ContentService {
      * @param pageable pageable
      * @return 컬렉션 정보
      */
+    @Cacheable(value = "detail-collection", key = "#contentId",
+            condition = "#pageable.pageNumber == 0 and #pageable.pageSize == T(com.devpedia.watchapedia.service.ContentService).DETAIL_COLLECTION_PAGE_SIZE")
     public DetailDto.CollectionInfo getCollectionInfo(Long contentId, Pageable pageable) {
         Page<Collection> collections = collectionRepository.getContentCollection(contentId, pageable);
         return DetailDto.CollectionInfo.builder()
@@ -511,6 +524,7 @@ public class ContentService {
      * @param content 컨텐츠
      * @return 컨텐츠 정보
      */
+    @Cacheable(value = "detail-content-info", key = "#content.id")
     public Object getContentInfo(Content content) {
         Object result = null;
 
@@ -560,6 +574,7 @@ public class ContentService {
      * @param content 컨텐츠
      * @return 참여자 리스트
      */
+    @Cacheable(value = "detail-participant", key = "#content.id")
     public List<DetailDto.ContentRole> getParticipants(Content content) {
         return content.getParticipants().stream()
                 .map(DetailDto.ContentRole::of)
@@ -571,6 +586,7 @@ public class ContentService {
      * @param content 컨텐츠
      * @return 갤러리 이미지 리스트
      */
+    @Cacheable(value = "detail-gallery", key = "#content.id")
     public List<String> getGalleries(Content content) {
         return content.getImages().stream()
                 .map(contentImage -> UrlUtil.getCloudFrontUrl(contentImage.getImage().getPath()))
