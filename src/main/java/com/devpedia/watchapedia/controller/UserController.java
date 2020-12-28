@@ -10,7 +10,7 @@ import com.devpedia.watchapedia.dto.enums.RatingContentOrder;
 import com.devpedia.watchapedia.exception.ExternalIOException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.repository.RedisRepository;
-import com.devpedia.watchapedia.repository.UserRepository;
+import com.devpedia.watchapedia.repository.user.UserRepository;
 import com.devpedia.watchapedia.security.JwtTokenProvider;
 import com.devpedia.watchapedia.service.RedisService;
 import com.devpedia.watchapedia.service.UserService;
@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -105,7 +106,7 @@ public class UserController {
 
             userService.joinOAuthIfNotExist(userInfo.getEmail(), userInfo.getName());
 
-            User user = userRepository.findByEmail(userInfo.getEmail());
+            User user = userRepository.findFirstByEmail(userInfo.getEmail());
 
             String accessToken = jwtTokenProvider.createAccessToken(String.valueOf(user.getId()), user.getRoles());
             String refreshToken = jwtTokenProvider.createRefreshToken(String.valueOf(user.getId()), user.getRoles());
@@ -234,7 +235,7 @@ public class UserController {
      * @return 평점 그룹 별 개수 및 리스트
      */
     @GetMapping("/users/{id}/{contentType}/ratings/by_rating")
-    public Map<Double, UserDto.UserRatingGroup> getMovieByRatingGroup(@PathVariable("id") Long targetId, @ApiIgnore Principal principal,
+    public Map<String, UserDto.UserRatingGroup> getMovieByRatingGroup(@PathVariable("id") Long targetId, @ApiIgnore Principal principal,
                                                                       @PathVariable ContentTypeParameter contentType,
                                                                       @RequestParam @Min(1) @Max(20) int size) {
         Long tokenId = principal != null ? Long.valueOf(principal.getName()) : null;
@@ -334,6 +335,6 @@ public class UserController {
     public List<UserDto.SearchUserItem> search(@RequestParam @NotBlank String query,
                                                @RequestParam @Positive int page,
                                                @RequestParam @Min(1)@Max(20) int size) {
-        return userService.getUserSearchList(query, page, size);
+        return userService.getUserSearchList(query, PageRequest.of(page - 1, size));
     }
 }

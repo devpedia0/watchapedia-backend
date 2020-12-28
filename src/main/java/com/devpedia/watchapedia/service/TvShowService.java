@@ -7,10 +7,12 @@ import com.devpedia.watchapedia.domain.TvShow;
 import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.MovieDto;
 import com.devpedia.watchapedia.dto.TvShowDto;
-import com.devpedia.watchapedia.repository.CollectionRepository;
-import com.devpedia.watchapedia.repository.TagRepository;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
+import com.devpedia.watchapedia.repository.collection.CollectionRepository;
+import com.devpedia.watchapedia.repository.tag.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -59,7 +61,7 @@ public class TvShowService {
      * @return 평점이 높은 티비프로그램 리스트
      */
     public List<ContentDto.MainList> getHighScoreList() {
-        ContentDto.MainList highScoreList = contentService.getHighScoreList(TvShow.class, HIGH_SCORE, HIGH_SCORE_LIST_SIZE);
+        ContentDto.MainList highScoreList = contentService.getHighScoreList(ContentTypeParameter.TV_SHOWS, HIGH_SCORE, HIGH_SCORE_LIST_SIZE);
         return Collections.singletonList(highScoreList);
     }
 
@@ -69,7 +71,7 @@ public class TvShowService {
      * @return 화제의 인물의 티비프로그램 리스트(배우)
      */
     public List<ContentDto.MainList> getPopularList() {
-        ContentDto.MainList actorList = contentService.getPeopleList(TvShow.class, POPULAR_JOB_ACTOR, POPULAR_LIST_SIZE);
+        ContentDto.MainList actorList = contentService.getPeopleList(ContentTypeParameter.TV_SHOWS, POPULAR_JOB_ACTOR, POPULAR_LIST_SIZE);
         return Collections.singletonList(actorList);
     }
 
@@ -79,9 +81,9 @@ public class TvShowService {
      */
     public List<ContentDto.MainList> getTagList() {
         List<ContentDto.MainList> result = new ArrayList<>();
-        List<Tag> tags = tagRepository.getRandom(RANDOM_TAG_COUNT);
+        List<Tag> tags = tagRepository.findByRandom(PageRequest.of(0, RANDOM_TAG_COUNT));
         for (Tag tag : tags) {
-            ContentDto.MainList tagList = contentService.getTagList(TvShow.class, tag, TAG_LIST_SIZE);
+            ContentDto.MainList tagList = contentService.getTagList(ContentTypeParameter.TV_SHOWS, tag, TAG_LIST_SIZE);
             result.add(tagList);
         }
         return result;
@@ -93,10 +95,10 @@ public class TvShowService {
      */
     public List<ContentDto.MainListForCollection> getCollectionList() {
         List<ContentDto.MainListForCollection> result = new ArrayList<>();
-        List<Collection> collections = collectionRepository.getRandom(contentService.classTypeToString(TvShow.class), RANDOM_COLLECTION_COUNT);
+        List<Collection> collections = collectionRepository.getRandom(ContentTypeParameter.TV_SHOWS, RANDOM_COLLECTION_COUNT);
 
         for (Collection collection : collections) {
-            ContentDto.MainListForCollection collectionList = contentService.getCollectionList(TvShow.class, collection, COLLECTION_LIST_SIZE);
+            ContentDto.MainListForCollection collectionList = contentService.getCollectionList(collection, COLLECTION_LIST_SIZE);
             result.add(collectionList);
         }
 
@@ -108,6 +110,6 @@ public class TvShowService {
      * @return 왓챠피디아 컬렉션
      */
     public List<ContentDto.ListForAward> getAwardList() {
-        return contentService.getAwardList(TvShow.class);
+        return contentService.getAwardList(ContentTypeParameter.TV_SHOWS);
     }
 }

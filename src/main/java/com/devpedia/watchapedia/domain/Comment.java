@@ -1,6 +1,7 @@
 package com.devpedia.watchapedia.domain;
 
 import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Where;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -51,6 +52,10 @@ public class Comment extends BaseEntity {
 
     public void setContent(Content content) {
         this.content = content;
+    }
+
+    public void edit(String description) {
+        if (!StringUtils.isBlank(description)) this.description = description;
     }
 
     @Embeddable

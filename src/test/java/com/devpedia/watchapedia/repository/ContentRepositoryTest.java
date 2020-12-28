@@ -1,34 +1,34 @@
 package com.devpedia.watchapedia.repository;
 
+import com.devpedia.watchapedia.builder.CollectionMother;
+import com.devpedia.watchapedia.builder.ContentMother;
+import com.devpedia.watchapedia.builder.ParticipantMother;
+import com.devpedia.watchapedia.builder.UserMother;
+import com.devpedia.watchapedia.config.TestConfig;
 import com.devpedia.watchapedia.domain.*;
-import org.junit.jupiter.api.MethodOrderer;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
+import com.devpedia.watchapedia.repository.content.ContentRepository;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Repository;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
-@DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = Repository.class))
+@DataJpaTest
 @AutoConfigureTestDatabase
-@TestMethodOrder(MethodOrderer.Alphanumeric.class)
+@Import(TestConfig.class)
 class ContentRepositoryTest {
 
     @Autowired
@@ -37,105 +37,155 @@ class ContentRepositoryTest {
     @Autowired
     private ContentRepository contentRepository;
 
-    @MockBean
-    private StringRedisTemplate redisTemplate;
-
     @Test
-    public void findById_CertainType_ThatType() throws Exception {
+    public void getContentsScoreIsGreaterThan_ScoreGt4_ReturnContents() throws Exception {
         // given
-        Movie expected = Movie.builder()
-                .mainTitle("main")
-                .posterImage(null)
-                .isWatchaContent(false)
-                .isNetflixContent(false)
-                .totalAudience(1000L)
-                .runningTimeInMinutes(100)
-                .bookRate(10.1)
-                .originTitle("title")
-                .countryCode("KR")
-                .productionDate(LocalDate.of(2020, 1, 20))
-                .description("desc")
-                .category("horror")
-                .build();
+        User user = UserMother.defaultUser().build();
 
-        em.persist(expected);
+        Movie movie1 = ContentMother.movie().build();
+        Movie movie2 = ContentMother.movie().build();
+        Movie movie3 = ContentMother.movie().build();
+
+        Score score1 = Score.builder().user(user).content(movie1).score(3.0).build();
+        Score score2 = Score.builder().user(user).content(movie2).score(4.0).build();
+        Score score3 = Score.builder().user(user).content(movie3).score(5.0).build();
+
+        em.persist(user);
+        em.persist(score1);
+        em.persist(score2);
+        em.persist(score3);
 
         // when
-        Movie actual = contentRepository.findById(Movie.class, expected.getId());
+        List<Content> contents = contentRepository.getContentsScoreIsGreaterThan(ContentTypeParameter.MOVIES,
+                4.0, 10);
 
         // then
-        assertThat(actual.getId()).isEqualTo(expected.getId());
+        assertThat(contents).hasSize(2);
     }
 
     @Test
-    public void findById_DifferentType_ReturnNull() throws Exception {
+    public void getContentScore_DifferentScore_ReturnScore() throws Exception {
         // given
-        Movie expected = Movie.builder()
-                .mainTitle("main")
-                .posterImage(null)
-                .isWatchaContent(false)
-                .isNetflixContent(false)
-                .totalAudience(1000L)
-                .runningTimeInMinutes(100)
-                .bookRate(10.1)
-                .originTitle("title")
-                .countryCode("KR")
-                .productionDate(LocalDate.of(2020, 1, 20))
-                .description("desc")
-                .category("horror")
-                .build();
+        User user = UserMother.defaultUser().build();
 
-        em.persist(expected);
+        Movie movie1 = ContentMother.movie().build();
+        Movie movie2 = ContentMother.movie().build();
+        Movie movie3 = ContentMother.movie().build();
+
+        Score score1 = Score.builder().user(user).content(movie1).score(3.0).build();
+        Score score2 = Score.builder().user(user).content(movie2).score(4.0).build();
+        Score score3 = Score.builder().user(user).content(movie3).score(5.0).build();
+
+        em.persist(user);
+        em.persist(score1);
+        em.persist(score2);
+        em.persist(score3);
+
+        Set<Long> ids = Set.of(movie1.getId(), movie2.getId(), movie3.getId());
 
         // when
-        Book actual = contentRepository.findById(Book.class, expected.getId());
+        Map<Long, Double> contentScore = contentRepository.getContentScore(ids);
 
         // then
-        assertThat(actual).isNull();
+        assertThat(contentScore).hasSize(3);
+        assertThat(contentScore.get(movie1.getId())).isEqualTo(3.0);
+        assertThat(contentScore.get(movie2.getId())).isEqualTo(4.0);
+        assertThat(contentScore.get(movie3.getId())).isEqualTo(5.0);
     }
 
     @Test
-    public void findListIn_CertainType_ThatTypeList() throws Exception {
+    public void getContentsHasParticipant_Exist_ReturnContents() throws Exception {
         // given
-        Movie expected1 = Movie.builder()
-                .mainTitle("main")
-                .posterImage(null)
-                .isWatchaContent(false)
-                .isNetflixContent(false)
-                .totalAudience(1000L)
-                .runningTimeInMinutes(100)
-                .bookRate(10.1)
-                .originTitle("title")
-                .countryCode("KR")
-                .productionDate(LocalDate.of(2020, 1, 20))
-                .description("desc")
-                .category("horror")
-                .build();
+        Movie movie1 = ContentMother.movie().build();
+        Movie movie2 = ContentMother.movie().build();
+        Movie movie3 = ContentMother.movie().build();
 
-        Movie expected2 = Movie.builder()
-                .mainTitle("main2")
-                .posterImage(null)
-                .isWatchaContent(false)
-                .isNetflixContent(false)
-                .totalAudience(1000L)
-                .runningTimeInMinutes(100)
-                .bookRate(10.1)
-                .originTitle("title")
-                .countryCode("KR")
-                .productionDate(LocalDate.of(2020, 1, 20))
-                .description("desc")
-                .category("horror")
-                .build();
+        Participant participant = ParticipantMother.defaultParticipant("배우").build();
 
-        em.persist(expected1);
-        em.persist(expected2);
+        movie1.addParticipant(participant, "role", "character");
+        movie2.addParticipant(participant, "role", "character");
+        movie3.addParticipant(participant, "role", "character");
 
-        Set<Long> ids = new HashSet<>(Arrays.asList(expected1.getId(), expected2.getId()));
+        em.persist(participant);
+        em.persist(movie1);
+        em.persist(movie2);
+        em.persist(movie3);
 
         // when
-        List<Movie> actualList = contentRepository.findListIn(Movie.class, ids);
+        List<Content> contents = contentRepository.getContentsHasParticipant(ContentTypeParameter.MOVIES,
+                participant.getId(), 10);
 
         // then
-        assertThat(actualList).hasSize(2);
+        assertThat(contents).hasSize(3);
     }
+
+    @Test
+    public void getContentsTagged_Exist_ReturnContents() throws Exception {
+        // given
+        Movie movie1 = ContentMother.movie().build();
+        Movie movie2 = ContentMother.movie().build();
+        Movie movie3 = ContentMother.movie().build();
+
+        Tag tag = Tag.builder().description("tag").build();
+
+        movie1.addTag(tag);
+        movie2.addTag(tag);
+        movie3.addTag(tag);
+
+        em.persist(tag);
+        em.persist(movie1);
+        em.persist(movie2);
+        em.persist(movie3);
+
+        // when
+        List<Content> contents = contentRepository.getContentsTagged(ContentTypeParameter.MOVIES,
+                tag.getId(), 10);
+
+        // then
+        assertThat(contents).hasSize(3);
+    }
+
+    @Test
+    public void getContentsInCollection_HasContent_ReturnContents() throws Exception {
+        // given
+        User user = UserMother.defaultUser().build();
+        Collection collection = CollectionMother.defaultCollection(user).build();
+
+        CollectionContent cc1 = CollectionContent.builder()
+                .collection(collection)
+                .content(ContentMother.movie().build())
+                .build();
+
+        CollectionContent cc2 = CollectionContent.builder()
+                .collection(collection)
+                .content(ContentMother.movie().build())
+                .build();
+
+        em.persist(user);
+        em.persist(collection);
+        em.persist(cc1);
+        em.persist(cc2);
+
+        // when
+        List<Content> contents = contentRepository.getContentsInCollection(collection.getId(),
+                PageRequest.of(0, 10));
+
+        // then
+        assertThat(contents).hasSize(2);
+    }
+
+    @Test
+    @Sql({"classpath:sql/default_contents.sql", "classpath:sql/trending_words.sql"})
+    public void getTrendingWords_Exist_ReturnWords() throws Exception {
+        // given
+
+        // when
+        List<String> words = contentRepository.getTrendingWords(2);
+
+        // then
+        assertThat(words).hasSize(2);
+        assertThat(words.get(0)).isEqualTo("Movie Title1");
+        assertThat(words.get(1)).isEqualTo("Movie Title2");
+    }
+
 }

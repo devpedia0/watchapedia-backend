@@ -85,7 +85,8 @@ public class ContentDto {
     @AllArgsConstructor
     @Builder
     public static class MainListForCollection {
-        private Long id;
+        private Long collectionId;
+        private Long userId;
         private String type;
         private String title;
         private String subtitle;
@@ -97,12 +98,12 @@ public class ContentDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class AwardItem {
+    public static class CollectionFourImages {
         private Long id;
         private String title;
         private List<String> images;
 
-        public <T extends Content> AwardItem(Collection collection, List<T> contents) {
+        public <T extends Content> CollectionFourImages(Collection collection, List<T> contents) {
             this.id = collection.getId();
             this.title = collection.getTitle();
             images = new ArrayList<>();
@@ -120,7 +121,7 @@ public class ContentDto {
     public static class ListForAward {
         private String type;
         private String title;
-        private List<AwardItem> list;
+        private List<CollectionFourImages> list;
     }
 
     @Getter

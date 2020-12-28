@@ -10,6 +10,7 @@ public class InterestStateConverter implements AttributeConverter<InterestState,
 
     @Override
     public InterestState convertToEntityAttribute(Integer dbData) {
+        if (dbData == null) return null;
         return InterestState.ofCode(dbData);
     }
 }

@@ -1,5 +1,7 @@
 package com.devpedia.watchapedia.domain.enums;
 
+import com.devpedia.watchapedia.exception.ValueNotMatchException;
+import com.devpedia.watchapedia.exception.common.ErrorCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -19,7 +21,6 @@ public enum InterestState {
         return Arrays.stream(InterestState.values())
                 .filter(v -> v.getCode() == code)
                 .findAny()
-                // TODO: Add exception
-                .orElseThrow();
+                .orElseThrow(() -> new ValueNotMatchException(ErrorCode.CONTENT_TYPE_NOT_VALID));
     }
 }

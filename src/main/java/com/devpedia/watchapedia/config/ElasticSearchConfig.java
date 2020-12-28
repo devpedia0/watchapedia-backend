@@ -3,15 +3,19 @@ package com.devpedia.watchapedia.config;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ElasticSearchConfig {
 
-    public static final String HOST = "222.111.195.42";
-    public static final int PORT = 9200;
-    public static final String SCHEME = "http";
+    @Value("${elasticsearch.host}")
+    public String HOST;
+    @Value("${elasticsearch.port}")
+    public int PORT;
+    @Value("${elasticsearch.scheme}")
+    public String SCHEME;
 
     @Bean
     public RestHighLevelClient restHighLevelClient() {

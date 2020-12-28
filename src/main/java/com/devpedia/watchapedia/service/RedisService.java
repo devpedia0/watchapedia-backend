@@ -15,6 +15,11 @@ public class RedisService {
     private final RedisRepository redisRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    /**
+     * 리프레쉬 토큰 정상 여부 확인 후 엑세스 토큰을 재발급한다.
+     * @param refreshToken 리프레쉬 토큰
+     * @return 새로운 엑세스 토큰
+     */
     public String getAccessTokenOrThrow(String refreshToken) {
         JwtTokenProvider.JwtParseInfo userInfo = jwtTokenProvider.getUserParseInfo(refreshToken);
         String storedToken = redisRepository.getRefreshToken(userInfo.getId());

@@ -1,9 +1,11 @@
 package com.devpedia.watchapedia.controller;
 
+import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.ParticipantDto;
 import com.devpedia.watchapedia.service.ParticipantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -46,6 +48,18 @@ public class ParticipantController {
     public List<ParticipantDto.ParticipantInfo> getParticipants(@RequestParam(required = false) String query,
                                                                 @RequestParam @Positive int page,
                                                                 @RequestParam @Min(1)@Max(20) int size) {
-        return participantService.searchWithPaging(query, page, size);
+        return participantService.searchWithPaging(query, PageRequest.of(page - 1, size));
+    }
+
+    @GetMapping("/participants/{id}")
+    public ParticipantDto.ParticipantInfo getParticipantInfo(@PathVariable Long id, @RequestParam @Min(1)@Max(20) int size) {
+        return participantService.getParticipantInfo(id, PageRequest.of(0, size));
+    }
+
+    @GetMapping("/participants/{id}/contents")
+    public List<ContentDto.CollectionItem> getParticipantContents(@PathVariable Long id,
+                                                                  @RequestParam @Positive int page,
+                                                                  @RequestParam @Min(1)@Max(20) int size) {
+        return participantService.getParticipantInfo(id, PageRequest.of(page - 1, size)).getContents();
     }
 }

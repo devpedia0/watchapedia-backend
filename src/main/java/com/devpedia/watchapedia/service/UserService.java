@@ -4,16 +4,19 @@ import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.enums.AccessRange;
 import com.devpedia.watchapedia.dto.ContentDto;
 import com.devpedia.watchapedia.dto.UserDto;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
 import com.devpedia.watchapedia.exception.AccessDeniedException;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.ValueDuplicatedException;
 import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.exception.common.ErrorField;
-import com.devpedia.watchapedia.repository.ContentRepository;
-import com.devpedia.watchapedia.repository.UserRepository;
+import com.devpedia.watchapedia.repository.content.ContentRepository;
+import com.devpedia.watchapedia.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,7 +41,7 @@ public class UserService {
      * @param request 유저가입 정보
      */
     public void join(UserDto.SignupRequest request) {
-        User existUser = userRepository.findByEmail(request.getEmail());
+        User existUser = userRepository.findFirstByEmail(request.getEmail());
 
         if (existUser != null) {
             if (existUser.getIsDeleted())
@@ -66,7 +69,7 @@ public class UserService {
      * @param name 가입 이름
      */
     public void joinOAuthIfNotExist(String email, String name) {
-        User existUser = userRepository.findByEmail(email);
+        User existUser = userRepository.findFirstByEmail(email);
 
         if (existUser != null) {
             if (existUser.getIsDeleted())
@@ -118,7 +121,7 @@ public class UserService {
      * @return 존재 여부
      */
     private boolean isExistUser(String email) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findFirstByEmail(email);
         return user != null;
     }
 
@@ -143,9 +146,7 @@ public class UserService {
      * @return 조회가능 여부
      */
     private boolean isAccessNotAvailable(Long targetUserId, Long tokenUserId) {
-        User targetUser = userRepository.findById(targetUserId);
-        if (targetUser == null || targetUser.getIsDeleted())
-            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        User targetUser = getUserIfExistOrThrow(targetUserId);
         return targetUser.getAccessRange() == AccessRange.PRIVATE && !targetUserId.equals(tokenUserId);
     }
 
@@ -186,9 +187,11 @@ public class UserService {
      * @param id user_id
      * @return 유저
      */
-    private User getUserIfExistOrThrow(Long id) {
-        User user = userRepository.findById(id);
-        if (user == null || user.getIsDeleted())
+    public User getUserIfExistOrThrow(Long id) {
+        if (id == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        Optional<User> optionalUser = userRepository.findById(id);
+        User user = optionalUser.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        if (user.getIsDeleted())
             throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
         return user;
     }
@@ -199,8 +202,9 @@ public class UserService {
      * @param email 이메일
      * @return 유저
      */
-    private User getUserIfExistOrThrow(String email) {
-        User user = userRepository.findByEmail(email);
+    public User getUserIfExistOrThrow(String email) {
+        if (email == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        User user = userRepository.findFirstByEmail(email);
         if (user == null || user.getIsDeleted())
             throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
         return user;
@@ -227,26 +231,27 @@ public class UserService {
      * @param parameter type, order, page, size
      * @return 평점 그룹 별 개수 및 리스트
      */
-    public Map<Double, UserDto.UserRatingGroup> getContentByRatingGroup(Long targetId, Long tokenId,
+    public Map<String, UserDto.UserRatingGroup> getContentByRatingGroup(Long targetId, Long tokenId,
                                                                         UserDto.RatingContentParameter parameter) {
         if (isAccessNotAvailable(targetId, tokenId))
             throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
 
-        Map<Double, Integer> counts = userRepository.getGroupedScoreCount(targetId, parameter.getType().getDtype());
-        List<Score> scores = userRepository.findUserGroupedScore(targetId, parameter.getType().getDtype(), parameter.getSize());
+        Map<String, Integer> counts = userRepository.getGroupedScoreCount(targetId, parameter.getType());
+        List<Score> scores = userRepository.findUserGroupedScore(targetId, parameter.getType(), parameter.getSize());
 
-        Map<Double, UserDto.UserRatingGroup> result = new LinkedHashMap<>();
+        Map<String, UserDto.UserRatingGroup> result = new LinkedHashMap<>();
 
         for (double score = 0.5; score <= 5; score += 0.5) {
-            result.putIfAbsent(score, UserDto.UserRatingGroup.builder()
-                    .count(counts.getOrDefault(score, 0))
+            result.putIfAbsent(String.valueOf(score), UserDto.UserRatingGroup.builder()
+                    .count(counts.getOrDefault(String.valueOf(score), 0))
                     .list(new ArrayList<>())
                     .build());
         }
 
         for (Score score : scores) {
             Content content = contentRepository.initializeAndUnproxy(score.getContent());
-            result.get(score.getScore()).getList().add(ContentDto.MainListItem.of(content, score.getScore()));
+            result.get(String.valueOf(score.getScore()))
+                    .getList().add(ContentDto.MainListItem.of(content, score.getScore()));
         }
 
         return result;
@@ -268,8 +273,8 @@ public class UserService {
         if (isAccessNotAvailable(targetId, tokenId))
             throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
 
-        List<Score> scores = userRepository.findUserScores(targetId, parameter.getType().getDtype(), score,
-                parameter.getOrder(), parameter.getPage(), parameter.getSize());
+        List<Score> scores = userRepository.findUserScores(targetId, parameter.getType(), score,
+                parameter.getOrder(), PageRequest.of(parameter.getPage() - 1, parameter.getSize()));
 
         return scores.stream()
                 .map(s -> ContentDto.MainListItem.of(contentRepository.initializeAndUnproxy(s.getContent()), s.getScore()))
@@ -289,9 +294,8 @@ public class UserService {
         if (isAccessNotAvailable(targetId, tokenId))
             throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
 
-        List<Interest> interests = userRepository.findUserInterestContent(targetId,
-                parameter.getType().getDtype(), parameter.getState().getCode(),
-                parameter.getOrder(), parameter.getPage(), parameter.getSize());
+        List<Interest> interests = userRepository.findUserInterestContent(targetId, parameter.getType(), parameter.getState(),
+                parameter.getOrder(), PageRequest.of(parameter.getPage() - 1, parameter.getSize()));
 
         return interests.stream()
                 .map(i -> ContentDto.MainListItem.of(contentRepository.initializeAndUnproxy(i.getContent()), null))
@@ -311,7 +315,7 @@ public class UserService {
         if (isAccessNotAvailable(targetId, tokenId))
             throw new AccessDeniedException(ErrorCode.ACCESS_NOT_AVAILABLE, "해당 유저는 비공개 유저입니다.");
 
-        User user = userRepository.findById(targetId);
+        User user = getUserIfExistOrThrow(targetId);
 
         UserDto.UserRatingAnalysis ratingAnalysis = userRepository.getRatingAnalysis(targetId);
         UserDto.UserMovieAnalysis movieAnalysis = getMovieAnalysis(targetId);
@@ -336,11 +340,11 @@ public class UserService {
      * @return 영화 선호 정보
      */
     private UserDto.UserMovieAnalysis getMovieAnalysis(Long userId) {
-        List<UserDto.FavoriteCommon> tags = userRepository.getFavoriteTag(userId, "M", FAVORITE_LIST_SIZE);
+        List<UserDto.FavoriteCommon> tags = userRepository.getFavoriteTag(userId, ContentTypeParameter.MOVIES, FAVORITE_LIST_SIZE);
         List<UserDto.FavoriteCommon> countries = userRepository.getFavoriteCountry(userId, FAVORITE_LIST_SIZE);
-        List<UserDto.FavoriteCommon> categories = userRepository.getFavoriteCategory(userId, "M", FAVORITE_LIST_SIZE);
-        List<UserDto.FavoritePerson> actor = userRepository.getFavoritePerson(userId, "M", "배우", FAVORITE_LIST_SIZE);
-        List<UserDto.FavoritePerson> director = userRepository.getFavoritePerson(userId, "M", "감독", FAVORITE_LIST_SIZE);
+        List<UserDto.FavoriteCommon> categories = userRepository.getFavoriteCategory(userId, ContentTypeParameter.MOVIES, FAVORITE_LIST_SIZE);
+        List<UserDto.FavoritePerson> actor = userRepository.getFavoritePerson(userId, ContentTypeParameter.MOVIES, "배우", FAVORITE_LIST_SIZE);
+        List<UserDto.FavoritePerson> director = userRepository.getFavoritePerson(userId, ContentTypeParameter.MOVIES, "감독", FAVORITE_LIST_SIZE);
         int totalRunningTimeInMinute = userRepository.getTotalRunningTime(userId);
 
         return UserDto.UserMovieAnalysis.builder()
@@ -361,8 +365,8 @@ public class UserService {
      * @return 책 선호 정보
      */
     private UserDto.UserBookAnalysis getBookAnalysis(Long userId) {
-        List<UserDto.FavoriteCommon> tags = userRepository.getFavoriteTag(userId, "B", FAVORITE_LIST_SIZE);
-        List<UserDto.FavoritePerson> author = userRepository.getFavoritePerson(userId, "B", "저자", FAVORITE_LIST_SIZE);
+        List<UserDto.FavoriteCommon> tags = userRepository.getFavoriteTag(userId, ContentTypeParameter.BOOKS, FAVORITE_LIST_SIZE);
+        List<UserDto.FavoritePerson> author = userRepository.getFavoritePerson(userId, ContentTypeParameter.BOOKS, "저자", FAVORITE_LIST_SIZE);
 
         return UserDto.UserBookAnalysis.builder()
                 .tag(tags)
@@ -375,12 +379,11 @@ public class UserService {
      * 평점, 코멘트, 보고싶어요, 보는중, 관심없음 개수를 담아서
      * 검색 결과 DTO 로 반환한다.
      * @param query 검색어(user.name)
-     * @param page 페이지
-     * @param size 사이즈
+     * @param pageable pageable
      * @return 유저 검색 결과
      */
-    public List<UserDto.SearchUserItem> getUserSearchList(String query, int page, int size) {
-        List<User> users = userRepository.findByName(query, page, size);
+    public List<UserDto.SearchUserItem> getUserSearchList(String query, Pageable pageable) {
+        List<User> users = userRepository.findByNameContaining(query, pageable);
         Map<Long, UserDto.ActionCounts> actionCountsMap = userRepository.getActionCounts(getUserIds(users));
         return users.stream()
                 .map(user -> UserDto.SearchUserItem.builder()

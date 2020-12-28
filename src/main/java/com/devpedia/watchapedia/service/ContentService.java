@@ -4,16 +4,24 @@ import com.devpedia.watchapedia.domain.Collection;
 import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.enums.ImageCategory;
 import com.devpedia.watchapedia.dto.ContentDto;
+import com.devpedia.watchapedia.dto.DetailDto;
 import com.devpedia.watchapedia.dto.ParticipantDto;
 import com.devpedia.watchapedia.dto.UserDto;
 import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
 import com.devpedia.watchapedia.exception.EntityNotExistException;
 import com.devpedia.watchapedia.exception.InvalidFileException;
-import com.devpedia.watchapedia.exception.ValueNotMatchException;
 import com.devpedia.watchapedia.exception.common.ErrorCode;
 import com.devpedia.watchapedia.repository.*;
+import com.devpedia.watchapedia.repository.collection.CollectionRepository;
+import com.devpedia.watchapedia.repository.content.ContentRepository;
+import com.devpedia.watchapedia.repository.participant.ParticipantRepository;
+import com.devpedia.watchapedia.repository.tag.TagRepository;
+import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,12 +42,16 @@ public class ContentService {
     public static final String LIST_TYPE_COLLECTION = "collection";
     public static final String LIST_TYPE_AWARD = "award";
     public static final Long AWARD_ADMIN_ID = 1L;
+    public static final Integer AWARD_POSTER_IMAGE_COUNT = 4;
 
     public static final int SEARCH_RESULT_LIST_PAGE = 1;
     public static final int SEARCH_RESULT_LIST_SIZE = 9;
 
+    public static final String CONTENT_JOB_AUTHOR = "저자";
 
-
+    public static final int DETAIL_COMMENT_PAGE_SIZE = 3;
+    public static final int DETAIL_COLLECTION_PAGE_SIZE = 5;
+    public static final int DETAIL_SIMILAR_PAGE_SIZE = 12;
 
     private final S3Service s3Service;
     private final UserService userService;
@@ -48,6 +60,10 @@ public class ContentService {
     private final TagRepository tagRepository;
     private final CollectionRepository collectionRepository;
     private final ElasticSearchRepository searchRepository;
+    private final CommentRepository commentRepository;
+    private final ScoreRepository scoreRepository;
+    private final InterestRepository interestRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     /**
      * 컨텐츠와 컨텐츠에 해당하는 태그, 인물, 갤러리 등을 저장한다.
@@ -111,7 +127,7 @@ public class ContentService {
         Map<Long, ParticipantDto.ParticipantRole> map = roles.stream()
                 .collect(Collectors.toMap(ParticipantDto.ParticipantRole::getParticipantId, role -> role));
 
-        List<Participant> participants = participantRepository.findListIn(map.keySet());
+        List<Participant> participants = participantRepository.findAllById(map.keySet());
 
         for (Participant participant : participants) {
             ParticipantDto.ParticipantRole role = map.get(participant.getId());
@@ -127,7 +143,7 @@ public class ContentService {
     private void addTags(Content content, List<Long> tags) {
         if (content == null || tags == null) return;
 
-        List<Tag> addedTags = tagRepository.findListIn(new HashSet<>(tags));
+        List<Tag> addedTags = tagRepository.findAllById(tags);
 
         for (Tag tag : addedTags) {
             content.addTag(tag);
@@ -160,69 +176,68 @@ public class ContentService {
 
     /**
      * 해당 컨텐츠 종류 중 특정 평점 이상인 작품을 개수만큼 조회한다.
-     * @param tClass 컨텐츠 종류 Class
+     * @param type 컨텐츠 타입 Enum
      * @param score 기준 평점
      * @param size 반환 개수
      * @return 평점 리스트
      */
-    public <T extends Content> ContentDto.MainList getHighScoreList(Class<T> tClass, double score, int size) {
-        List<T> movies = contentRepository.getContentsScoreIsGreaterThan(tClass, score, size);
+    public ContentDto.MainList getHighScoreList(ContentTypeParameter type, double score, int size) {
+        List<Content> highScoreContents = contentRepository.getContentsScoreIsGreaterThan(type, score, size);
         return ContentDto.MainList.builder()
                 .type(LIST_TYPE_SCORE)
                 .title("평균별점이 높은 작품")
-                .list(getContentsWithScore(movies))
+                .list(getContentsWithScore(highScoreContents))
                 .build();
     }
 
     /**
      * 해당 컨텐츠 종류에서 해당 직업을 가진 인물 중
      * 가장 많은 작품에 참여한 인물의 작품 리스트를 가져온다.
-     * @param tClass 컨텐츠 종류 Class
+     * @param type 컨텐츠 종류 Enum
      * @param job 직업(ex. 감독, 배우, 역자)
      * @param size 반환 개수
      * @return 화제의 인물 리스트
      */
-    public <T extends Content> ContentDto.MainList getPeopleList(Class<T> tClass, String job, int size) {
-        Participant people = participantRepository.findMostParticipatedHasJob(classTypeToString(tClass), job);
-        List<T> contents = contentRepository.getContentsHasParticipant(tClass, people, size);
+    public ContentDto.MainList getPeopleList(ContentTypeParameter type, String job, int size) {
+        Participant people = participantRepository.findMostFamous(type, job);
+        List<Content> famousContents = contentRepository.getContentsHasParticipant(type, people.getId(), size);
         return ContentDto.MainList.builder()
                 .type(LIST_TYPE_POPULAR)
                 .title(String.format("화제의 %s %s의 작품", job, people.getName()))
-                .list(getContentsWithScore(contents))
+                .list(getContentsWithScore(famousContents))
                 .build();
     }
 
     /**
      * 해당 컨텐츠 종류에서 해당 태그가
      * 포함된 작품 리스트를 가져온다.
-     * @param tClass 컨텐츠 종류 Class
+     * @param type 컨텐츠 종류 Enum
      * @param tag 태그
      * @param size 반환 개수
      * @return 화제의 인물 리스트
      */
-    public <T extends Content> ContentDto.MainList getTagList(Class<T> tClass, Tag tag, int size) {
-        List<T> tagMovies = contentRepository.getContentsTagged(tClass, tag, size);
+    public ContentDto.MainList getTagList(ContentTypeParameter type, Tag tag, int size) {
+        List<Content> taggedContents = contentRepository.getContentsTagged(type, tag.getId(), size);
         return ContentDto.MainList.builder()
                 .type(LIST_TYPE_TAG)
                 .title(String.format("#%s", tag.getDescription()))
-                .list(getContentsWithScore(tagMovies))
+                .list(getContentsWithScore(taggedContents))
                 .build();
     }
 
     /**
-     * 해당 컨텐츠 종류에서 해당 컬렉션에
+     * 해당 컬렉션에
      * 포함된 작품 리스트를 가져온다.
-     * @param tClass 컨텐츠 종류 Class
      * @param collection 컬렉션
      * @param size 반환 개수
      * @return 화제의 인물 리스트
      */
-    public <T extends Content> ContentDto.MainListForCollection getCollectionList(Class<T> tClass, Collection collection,
-                                                                                  int size) {
-        List<T> collectionMovies = contentRepository.getContentsInCollection(tClass, collection, 1, size);
+    public ContentDto.MainListForCollection getCollectionList(Collection collection, int size) {
+        List<Content> collectionMovies = contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(0, size));
         return ContentDto.MainListForCollection.builder()
                 .type(LIST_TYPE_COLLECTION)
-                .id(collection.getId())
+                .collectionId(collection.getId())
+                .userId(collection.getUser().getId())
                 .title(String.format("%s님의 컬렉션", collection.getUser().getName()))
                 .subtitle(collection.getTitle())
                 .list(getContentsWithScore(collectionMovies))
@@ -234,7 +249,7 @@ public class ContentService {
      * @param contents 컨텐츠 리스트
      * @return 평균 평점이 포함된 리스트
      */
-    public <T extends Content> List<ContentDto.MainListItem> getContentsWithScore(List<T> contents) {
+    public List<ContentDto.MainListItem> getContentsWithScore(List<Content> contents) {
         Map<Long, Double> contentScore = getContentScore(contents);
         return contents.stream()
                 .map(content -> ContentDto.MainListItem.of(content, contentScore.get(content.getId())))
@@ -248,7 +263,7 @@ public class ContentService {
      * @param contents 컨텐츠 리스트
      * @return 평균평점 Map
      */
-    protected <T extends Content> Map<Long, Double> getContentScore(List<T> contents) {
+    private <T extends Content> Map<Long, Double> getContentScore(List<T> contents) {
         Set<Long> ids = contents.stream()
                 .map(Content::getId)
                 .collect(Collectors.toSet());
@@ -258,51 +273,32 @@ public class ContentService {
     /**
      * 해당 컨텐츠 종류에 해당하는 왓챠피디아 컬렉션 리스트를 조회한다.
      * 조회결과는 컬렉션 정보, 보여줄 이미지 리스트
-     * @param tClass 컨텐츠 종류 Class
+     * @param type 컨텐츠 종류 Enum
      * @return 왓챠피디아 컬렉션 리스트
      */
-    public <T extends Content> List<ContentDto.ListForAward> getAwardList(Class<T> tClass) {
-        List<Collection> awardCollection = collectionRepository.getAward(classTypeToString(tClass));
-
-        List<ContentDto.AwardItem> items = new ArrayList<>();
-        for (Collection collection : awardCollection) {
-            List<T> contentsInCollection = contentRepository.getContentsInCollection(tClass, collection, 1, 4);
-            items.add(new ContentDto.AwardItem(collection, contentsInCollection));
-        }
+    public <T extends Content> List<ContentDto.ListForAward> getAwardList(ContentTypeParameter type) {
+        List<Collection> awardCollection = collectionRepository.getAward(type);
         ContentDto.ListForAward awardList = ContentDto.ListForAward.builder()
                 .type(LIST_TYPE_AWARD)
                 .title("왓챠피디아 컬렉션")
-                .list(items)
+                .list(convertCollections(awardCollection))
                 .build();
-
         return Collections.singletonList(awardList);
-    }
-
-    /**
-     * 컨텐츠 클래스 타입을 DB에 저장되는 String 값로 변환한다.
-     * @param tClass 컨텐츠 종류 Class
-     * @return 컨텐츠 종류 String
-     */
-    public <T extends Content> String classTypeToString(Class<T> tClass) {
-        if (tClass == Movie.class) return "M";
-        else if (tClass == Book.class) return "B";
-        else if (tClass == TvShow.class) return "S";
-        else throw new ValueNotMatchException(ErrorCode.CONTENT_TYPE_NOT_VALID);
     }
 
     /**
      * 왓챠피디아 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
      * @param id 컬렉션 아이디
-     * @param page 페이지
-     * @param size 사이즈
+     * @param pageable pageable
      * @return 컬렉션 상세 정보 및 컨텐츠 리스트
      */
-    public ContentDto.MainList getAwardDetail(Long id, int page, int size) {
-        Collection collection = collectionRepository.findById(id);
-        if (collection == null || !collection.getUser().getId().equals(AWARD_ADMIN_ID))
+    public ContentDto.MainList getAwardDetail(Long id, Pageable pageable) {
+        Optional<Collection> optionalCollection = collectionRepository.findById(id);
+        Collection collection = optionalCollection.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        if (!collection.getUser().getId().equals(AWARD_ADMIN_ID))
             throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
 
-        List<Content> contents = contentRepository.getContentsInCollection(Content.class, collection, page, size);
+        List<Content> contents = contentRepository.getContentsInCollection(collection.getId(), pageable);
         return ContentDto.MainList.builder()
                 .type(LIST_TYPE_AWARD)
                 .title(collection.getTitle())
@@ -313,22 +309,20 @@ public class ContentService {
     /**
      * 유저 컬렉션 상세 정보 및 컨텐츠 리스트 조회.
      * @param id 컬렉션 아이디
-     * @param page 페이지
-     * @param size 사이즈
+     * @param pageable pageable
      * @return 컬렉션 상세 정보 및 컨텐츠 리스트
      */
-    public ContentDto.CollectionDetail getCollectionDetail(Long id, int page, int size) {
-        Collection collection = collectionRepository.findById(id);
-        if (collection == null)
-            throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+    public ContentDto.CollectionDetail getCollectionDetail(Long id, Pageable pageable) {
+        Optional<Collection> optionalCollection = collectionRepository.findById(id);
+        Collection collection = optionalCollection.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
 
-        Integer contentCount = collectionRepository.getContentCount(collection.getId());
-        List<Content> contents = contentRepository.getContentsInCollection(Content.class, collection, page, size);
+        Long contentCount = collectionRepository.countContentById(collection.getId());
+        List<Content> contents = contentRepository.getContentsInCollection(collection.getId(), pageable);
         return ContentDto.CollectionDetail.builder()
                 .userName(collection.getUser().getName())
                 .title(collection.getTitle())
                 .description(collection.getDescription())
-                .contentCount(contentCount)
+                .contentCount(contentCount != null ? contentCount.intValue() : 0)
                 .list(getCollectionContentsWithScore(contents))
                 .build();
     }
@@ -361,7 +355,7 @@ public class ContentService {
         List<Object> movieList = getSearchList(ids.get(ElasticSearchRepository.TYPE_MOVIE));
         List<Object> tvShowList = getSearchList(ids.get(ElasticSearchRepository.TYPE_TV_SHOW));
         List<Object> bookList = getSearchList(ids.get(ElasticSearchRepository.TYPE_BOOK));
-        List<UserDto.SearchUserItem> userList = userService.getUserSearchList(query, SEARCH_RESULT_LIST_PAGE, SEARCH_RESULT_LIST_SIZE);
+        List<UserDto.SearchUserItem> userList = userService.getUserSearchList(query, PageRequest.of(SEARCH_RESULT_LIST_PAGE - 1, SEARCH_RESULT_LIST_SIZE));
 
         return ContentDto.SearchResult.builder()
                 .topResults(topList)
@@ -393,7 +387,7 @@ public class ContentService {
      * @return 검색 결과 DTO 리스트(SearchMovieItem, SearchTvShowItem, SearchBookItem)
      */
     private List<Object> getSearchList(List<Long> ids) {
-        List<Content> contents = contentRepository.findListIn(Content.class, new HashSet<>(ids));
+        List<Content> contents = contentRepository.findAllById(ids);
         List<Object> result = new ArrayList<>();
 
         for (Content content : contents) {
@@ -406,5 +400,362 @@ public class ContentService {
         }
 
         return result;
+    }
+
+    /**
+     * 컨텐츠 상세 정보를 조회한다.
+     * @param contentId 컨텐츠 id
+     * @param tokenId 토큰 유저 id
+     * @return 컨텐츠 상세 정보
+     */
+    public DetailDto.ContentDetail getContentDetail(Long contentId, Long tokenId) {
+        Optional<Content> optionalContent = contentRepository.findById(contentId);
+        Content content = optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+
+        return DetailDto.ContentDetail.builder()
+                .context(getUserContext(content, tokenId))
+                .contentInfo(getContentInfo(content))
+                .participants(getParticipants(content))
+                .comments(getCommentInfo(content.getId(), tokenId, PageRequest.of(0, DETAIL_COMMENT_PAGE_SIZE)))
+                .galleries(getGalleries(content))
+                .scores(getScoreAnalysis(content))
+                .collections(getCollectionInfo(content.getId(), PageRequest.of(0, DETAIL_COLLECTION_PAGE_SIZE)))
+                .similar(getSimilar(content.getId(), PageRequest.of(0, DETAIL_SIMILAR_PAGE_SIZE)))
+                .build();
+    }
+
+    /**
+     * 컨텐츠 상세 페이지의 초기 코멘트 리스트와
+     * 해당 컨텐츠의 총 코멘트 개수를 구한다.
+     * @param contentId 컨텐츠 id
+     * @param userId 토큰 유저 id
+     * @param pageable pageable
+     * @return 컨텐츠 코멘트 정보
+     */
+    public DetailDto.CommentInfo getCommentInfo(Long contentId, Long userId, Pageable pageable) {
+        int count = contentRepository.countComments(contentId).intValue();
+        List<DetailDto.CommentDetail> list = contentRepository.getComments(contentId, userId != null ? userId: 0, pageable);
+        return DetailDto.CommentInfo.builder()
+                .count(count)
+                .list(list)
+                .build();
+    }
+
+    /**
+     * 해당 컨텐츠와 유사한 컨텐츠 리스트를 구한다.
+     * 현재는 카테고리가 동일한 컨텐츠를 구한다.
+     * @param contentId 컨텐츠 id
+     * @param pageable pageable
+     * @return 유사한 컨텐츠 리스트
+     */
+    public List<ContentDto.CollectionItem> getSimilar(Long contentId, Pageable pageable) {
+        Optional<Content> optionalContent = contentRepository.findById(contentId);
+        Content content = optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+
+        String category = content.getCategory().split("/")[0];
+        List<Content> contents = contentRepository.findByCategoryContainingAndDtype(category, content.getDtype(), pageable);
+        return getCollectionContentsWithScore(contents);
+    }
+
+    /**
+     * 해당 컨텐츠를 포함하는 컬렉션 개수와 리스트를 구한다.
+     * @param contentId 컨텐츠 id
+     * @param pageable pageable
+     * @return 컬렉션 정보
+     */
+    public DetailDto.CollectionInfo getCollectionInfo(Long contentId, Pageable pageable) {
+        Page<Collection> collections = collectionRepository.getContentCollection(contentId, pageable);
+        return DetailDto.CollectionInfo.builder()
+                .count((int) collections.getTotalElements())
+                .list(convertCollections(collections.getContent()))
+                .build();
+    }
+
+    /**
+     * 각 컬렉션 별 포함한 컨텐츠 4개의 포스터 정보를 구해서 리턴한다.
+     * @param collections 컬렉션 리스트
+     * @return 포함된 컨텐츠 4개의 포스터 정보
+     */
+    private List<ContentDto.CollectionFourImages> convertCollections(List<Collection> collections) {
+        List<ContentDto.CollectionFourImages> list = new ArrayList<>();
+        for (Collection collection : collections) {
+            List<Content> contentsInCollection =
+                    contentRepository.getContentsInCollection(collection.getId(), PageRequest.of(0, AWARD_POSTER_IMAGE_COUNT));
+            list.add(new ContentDto.CollectionFourImages(collection, contentsInCollection));
+        }
+        return list;
+    }
+
+    /**
+     * 컨텐츠의 평점 관련 통계 정보를 반환한다.
+     * @param content 컨텐츠
+     * @return 평점 정보
+     */
+    public DetailDto.ScoreAnalysis getScoreAnalysis(Content content) {
+        return contentRepository.getScoreAnalysis(content.getId());
+    }
+
+    /**
+     * 해당 유저의 해당 컨텐츠 관련 활동 정보를 반환한다.
+     * @param content 컨텐츠
+     * @param userId 유저 id
+     * @return 활동 정보
+     */
+    private DetailDto.UserContext getUserContext(Content content, Long userId) {
+        if (userId == null) return null;
+        return contentRepository.getUserContext(content.getId(), userId);
+    }
+
+    /**
+     * 컨텐츠 엔티티로부터 각 형태에 맞는 컨텐츠 정보를 반환한다.
+     * @param content 컨텐츠
+     * @return 컨텐츠 정보
+     */
+    public Object getContentInfo(Content content) {
+        Object result = null;
+
+        if (content instanceof Movie) {
+            result = getMovieInfo((Movie) content);
+        } else if (content instanceof Book) {
+            result = getBookInfo((Book) content);
+        } else if (content instanceof TvShow){
+            result = getTvShowInfo((TvShow) content);
+        }
+
+        return result;
+    }
+
+    /**
+     * 영화의 상세 정보를 구한다.
+     * @param movie 영화
+     * @return 영화 상세 정보
+     */
+    private DetailDto.MovieDetail getMovieInfo(Movie movie) {
+        return DetailDto.MovieDetail.of(movie);
+    }
+
+    /**
+     * 책의 상세 정보를 구한다.
+     * 책의 경우 저자의 정보도 같이 반환함.
+     * @param book 책
+     * @return 책 상세 정보
+     */
+    private DetailDto.BookDetail getBookInfo(Book book) {
+        List<Participant> authors = participantRepository.findContentParticipantHasJob(book.getId(), CONTENT_JOB_AUTHOR);
+        Participant author = authors.size() > 0 ? authors.get(0) : null;
+        return DetailDto.BookDetail.of(book, author);
+    }
+
+    /**
+     * 티비프로그램 상세 정보를 구한다.
+     * @param tvShow 티비프로그램
+     * @return 티비 상세 정보
+     */
+    private DetailDto.TvShowDetail getTvShowInfo(TvShow tvShow) {
+        return DetailDto.TvShowDetail.of(tvShow);
+    }
+
+    /**
+     * 해당 컨텐츠에 참여한 참여자 리스트를 구한다.
+     * @param content 컨텐츠
+     * @return 참여자 리스트
+     */
+    public List<DetailDto.ContentRole> getParticipants(Content content) {
+        return content.getParticipants().stream()
+                .map(DetailDto.ContentRole::of)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 해당 컨텐츠의 갤러리 이미지 리스트를 구한다.
+     * @param content 컨텐츠
+     * @return 갤러리 이미지 리스트
+     */
+    public List<String> getGalleries(Content content) {
+        return content.getImages().stream()
+                .map(contentImage -> UrlUtil.getCloudFrontUrl(contentImage.getImage().getPath()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 코멘트를 생성하거나 수정한다,
+     * 코멘트가 존재하지 않으면 생성, 이미 존재하면 수정하여 적용함.
+     * @param contentId 컨텐츠 Id
+     * @param userId 코멘트 유저 id
+     * @param request 코멘트 요청(내용)
+     */
+    public void createOrEditComment(Long contentId, Long userId, DetailDto.CommentRequest request) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+
+        Optional<Comment> optionalComment = commentRepository.findById(new Comment.CommentId(user.getId(), content.getId()));
+        if (optionalComment.isEmpty()) {
+            Comment comment = Comment.builder()
+                    .user(user)
+                    .content(content)
+                    .description(request.getDescription())
+                    .containsSpoiler(false)
+                    .build();
+            commentRepository.save(comment);
+        } else {
+            Comment comment = optionalComment.get();
+            comment.edit(request.getDescription());
+        }
+    }
+
+    /**
+     * 코멘트를 조회 후 존재하면 삭제한다.
+     * @param contentId 컨텐츠 id
+     * @param userId 코멘트 유저 id
+     */
+    public void deleteComment(Long contentId, Long userId) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+        Optional<Comment> optionalComment = commentRepository.findById(new Comment.CommentId(user.getId(), content.getId()));
+        Comment comment = optionalComment.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        commentRepository.delete(comment);
+    }
+
+    /**
+     * 컨텐츠를 가져오고 존재하지 않으면 Exception 을 던진다.
+     * @param contentId 컨텐츠 id
+     * @return 컨텐츠
+     */
+    private Content getContentIfExistOrThrow(Long contentId) {
+        Optional<Content> optionalContent = contentRepository.findById(contentId);
+        return optionalContent.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+    }
+
+    /**
+     * 평점을 생성하거나 수정한다,
+     * 평점이 존재하지 않으면 생성, 이미 존재하면 수정하여 적용함.
+     * @param contentId 컨텐츠 Id
+     * @param userId 평점 유저 id
+     * @param request 평점 요청(점수)
+     */
+    public void createOrEditScore(Long contentId, Long userId, DetailDto.ScoreRequest request) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+
+        Optional<Score> optionalScore = scoreRepository.findById(new Score.ScoreId(user.getId(), content.getId()));
+        if (optionalScore.isEmpty()) {
+            Score score = Score.builder()
+                    .user(user)
+                    .content(content)
+                    .score(request.getScore())
+                    .build();
+            scoreRepository.save(score);
+        } else {
+            Score score = optionalScore.get();
+            score.edit(request.getScore());
+        }
+    }
+
+    /**
+     * 관심 정보를 생성하거나 수정한다,
+     * 관심 정보가 존재하지 않으면 생성, 이미 존재하면 수정하여 적용함.
+     * @param contentId 컨텐츠 Id
+     * @param userId 관심 유저 id
+     * @param request 관심 요청(관심 상태)
+     */
+    public void createOrEditInterest(Long contentId, Long userId, DetailDto.InterestRequest request) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+
+        Optional<Interest> optionalInterest = interestRepository.findById(new Interest.InterestId(user.getId(), content.getId()));
+        if (optionalInterest.isEmpty()) {
+            Interest interest = Interest.builder()
+                    .user(user)
+                    .content(content)
+                    .state(request.getState())
+                    .build();
+            interestRepository.save(interest);
+        } else {
+            Interest interest = optionalInterest.get();
+            interest.edit(request.getState());
+        }
+    }
+
+    /**
+     * 유저의 평점 정보를 삭제한다.
+     * @param contentId 컨텐츠 id
+     * @param userId 평점 유저 id
+     */
+    public void deleteScore(Long contentId, Long userId) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+        Optional<Score> optionalScore = scoreRepository.findById(new Score.ScoreId(user.getId(), content.getId()));
+        Score score = optionalScore.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        scoreRepository.delete(score);
+    }
+
+    /**
+     * 유저의 관심 정보를 삭제한다.
+     * @param contentId 컨텐츠 id
+     * @param userId 관심 유저 id
+     */
+    public void deleteInterest(Long contentId, Long userId) {
+        User user = userService.getUserIfExistOrThrow(userId);
+        Content content = getContentIfExistOrThrow(contentId);
+        Optional<Interest> optionalInterest = interestRepository.findById(new Interest.InterestId(user.getId(), content.getId()));
+        Interest interest = optionalInterest.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        interestRepository.delete(interest);
+    }
+
+    /**
+     * 코멘트에 좋아요 표시를 한다.
+     * @param contentId 컨텐츠 id
+     * @param commentUserId 코멘트 유저 id
+     * @param likeUserId 좋아요 유저 id
+     */
+    public void createCommentLike(Long contentId, Long commentUserId, Long likeUserId) {
+        Comment comment = getCommentIfExistOrThrow(contentId, commentUserId);
+        User user = userService.getUserIfExistOrThrow(likeUserId);
+
+        Optional<CommentLike> optionalLike = commentLikeRepository.findById(new CommentLike.CommentLikeId(comment.getId(), likeUserId));
+        if (optionalLike.isEmpty()) {
+            CommentLike like = CommentLike.builder()
+                    .comment(comment)
+                    .user(user)
+                    .build();
+            commentLikeRepository.save(like);
+        }
+    }
+
+    /**
+     * 코멘트에 좋아요를 삭제한다.
+     * @param contentId 컨텐츠 id
+     * @param commentUserId 코멘트 유저 id
+     * @param likeUserId 좋아요 유저 id
+     */
+    public void deleteCommentLike(Long contentId, Long commentUserId, Long likeUserId) {
+        Comment comment = getCommentIfExistOrThrow(contentId, commentUserId);
+        Optional<CommentLike> optionalLike = commentLikeRepository.findById(new CommentLike.CommentLikeId(comment.getId(), likeUserId));
+        CommentLike commentLike = optionalLike.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+        commentLikeRepository.delete(commentLike);
+    }
+
+    /**
+     * 코멘트가 존재하면 가져오고 없으면 Exception
+     * @param contentId 컨텐츠 id
+     * @param commentUserId 코멘트 유저 id
+     * @return 코멘트
+     */
+    private Comment getCommentIfExistOrThrow(Long contentId, Long commentUserId) {
+        Optional<Comment> optionalComment = commentRepository.findById(new Comment.CommentId(commentUserId, contentId));
+        return optionalComment.orElseThrow(() -> new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND));
+    }
+
+    /**
+     * 코멘트 상세 정보를 가져온다.
+     * @param contentId 컨텐츠 id
+     * @param commentUserId 코멘트 유저 id
+     * @param tokenId 토큰 유저
+     * @return 코멘트 상세 정보
+     */
+    public DetailDto.CommentDetail getCommentDetail(Long contentId, Long commentUserId, Long tokenId) {
+        DetailDto.CommentDetail comment = contentRepository.getComment(contentId, commentUserId, tokenId);
+        if (comment == null) throw new EntityNotExistException(ErrorCode.ENTITY_NOT_FOUND);
+        return comment;
     }
 }

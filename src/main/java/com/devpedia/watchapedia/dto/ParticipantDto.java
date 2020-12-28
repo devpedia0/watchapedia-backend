@@ -6,6 +6,7 @@ import com.devpedia.watchapedia.util.UrlUtil;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
+import java.util.List;
 
 public class ParticipantDto {
 
@@ -63,16 +64,12 @@ public class ParticipantDto {
     @AllArgsConstructor
     @Builder
     public static class ParticipantInfo {
-        @NotBlank
         private Long id;
-        @NotBlank
         private String name;
-        @NotBlank
         private String job;
-
         private String description;
-
         private String profileImagePath;
+        private List<ContentDto.CollectionItem> contents;
 
         public ParticipantInfo(Participant participant) {
             this.id = participant.getId();

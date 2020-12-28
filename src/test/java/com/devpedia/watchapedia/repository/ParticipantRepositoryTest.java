@@ -1,7 +1,13 @@
 package com.devpedia.watchapedia.repository;
 
+import com.devpedia.watchapedia.builder.ContentMother;
+import com.devpedia.watchapedia.builder.ParticipantMother;
+import com.devpedia.watchapedia.builder.UserMother;
+import com.devpedia.watchapedia.config.TestConfig;
+import com.devpedia.watchapedia.domain.*;
 import com.devpedia.watchapedia.domain.Collection;
-import com.devpedia.watchapedia.domain.Participant;
+import com.devpedia.watchapedia.dto.enums.ContentTypeParameter;
+import com.devpedia.watchapedia.repository.participant.ParticipantRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -14,6 +20,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -25,9 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(SpringExtension.class)
-@DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = Repository.class))
+@DataJpaTest
 @AutoConfigureTestDatabase
-@TestMethodOrder(MethodOrderer.Alphanumeric.class)
+@Import(TestConfig.class)
 class ParticipantRepositoryTest {
 
     @Autowired
@@ -36,121 +43,32 @@ class ParticipantRepositoryTest {
     @Autowired
     private ParticipantRepository participantRepository;
 
-    @MockBean
-    private StringRedisTemplate redisTemplate;
-
-    @BeforeEach
-    public void setup() {
-
-    }
-
     @Test
-    public void findListIn_Correct_ReturnList() throws Exception {
+    public void getContentScore_DifferentScore_ReturnScore() throws Exception {
         // given
-        Participant expected1 = Participant.builder()
-                .name("p1")
-                .job("j1")
-                .description("desc1")
-                .build();
+        Movie movie1 = ContentMother.movie().build();
+        Movie movie2 = ContentMother.movie().build();
+        Movie movie3 = ContentMother.movie().build();
 
-        Participant expected2 = Participant.builder()
-                .name("p2")
-                .job("j2")
-                .description("desc2")
-                .build();
+        Participant participant1 = ParticipantMother.defaultParticipant("배우").build();
+        Participant participant2 = ParticipantMother.defaultParticipant("배우").build();
 
-        Participant expected3 = Participant.builder()
-                .name("p3")
-                .job("j3")
-                .description("desc3")
-                .build();
+        movie1.addParticipant(participant1, "role", "name");
 
-        em.persist(expected1);
-        em.persist(expected2);
-        em.persist(expected3);
+        movie2.addParticipant(participant2, "role", "name");
+        movie3.addParticipant(participant2, "role", "name");
 
-        Set<Long> ids = new HashSet<>(Arrays.asList(expected1.getId(), expected2.getId(), expected3.getId()));
+        em.persist(participant1);
+        em.persist(participant2);
+        em.persist(movie1);
+        em.persist(movie2);
+        em.persist(movie3);
 
         // when
-        List<Participant> actualList = participantRepository.findListIn(ids);
+        Participant mostFamous = participantRepository.findMostFamous(ContentTypeParameter.MOVIES, "배우");
 
         // then
-        assertThat(actualList).hasSize(3);
-    }
-
-    @Test
-    public void findListIn_NullSet_ReturnEmptyList() throws Exception {
-        // given
-        Set<Long> ids = null;
-
-        // when
-        List<Participant> actualList = participantRepository.findListIn(ids);
-
-        // then
-        assertThat(actualList).isNotNull().hasSize(0);
-    }
-
-    @Test
-    public void searchWithPaging_WithQuery_PagingQueriedList() throws Exception {
-        // given
-        Participant expected1 = Participant.builder()
-                .name("aaa")
-                .job("j1")
-                .description("desc1")
-                .build();
-
-        Participant expected2 = Participant.builder()
-                .name("bbb")
-                .job("j2")
-                .description("desc2")
-                .build();
-
-        Participant expected3 = Participant.builder()
-                .name("aab")
-                .job("j3")
-                .description("desc2")
-                .build();
-
-        em.persist(expected1);
-        em.persist(expected2);
-        em.persist(expected3);
-
-        // when
-        List<Participant> actualList = participantRepository.searchWithPaging("aa", 1, 5);
-
-        // then
-        assertThat(actualList).hasSize(2);
-    }
-
-    @Test
-    public void searchWithPaging_WithoutQuery_PagingOnlyList() throws Exception {
-        // given
-        Participant expected1 = Participant.builder()
-                .name("aaa")
-                .job("j1")
-                .description("desc1")
-                .build();
-
-        Participant expected2 = Participant.builder()
-                .name("bbb")
-                .job("j2")
-                .description("desc2")
-                .build();
-
-        Participant expected3 = Participant.builder()
-                .name("aab")
-                .job("j3")
-                .description("desc2")
-                .build();
-
-        em.persist(expected1);
-        em.persist(expected2);
-        em.persist(expected3);
-
-        // when
-        List<Participant> actualList = participantRepository.searchWithPaging("", 1, 5);
-
-        // then
-        assertThat(actualList).hasSize(3);
+        assertThat(mostFamous).isNotNull();
+        assertThat(mostFamous.getId()).isEqualTo(participant2.getId());
     }
 }

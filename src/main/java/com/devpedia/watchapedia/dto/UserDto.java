@@ -147,6 +147,10 @@ public class UserDto {
         private Integer watchingCount;
         private Integer notInterestCount;
         private Integer commentCount;
+
+        public static ActionCounts zero() {
+            return new ActionCounts(0, 0, 0, 0, 0);
+        }
     }
 
     @Getter @Setter
@@ -203,10 +207,10 @@ public class UserDto {
         private Integer movieCount;
         private Integer bookCount;
         private Integer tvShowCount;
-        private int totalCount;
+        private Integer totalCount;
         private Double average;
         private Double mostRating;
-        private LinkedHashMap<Double, Integer> distribution;
+        private LinkedHashMap<String, Integer> distribution;
     }
 
     @Getter
