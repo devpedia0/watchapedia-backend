@@ -2,7 +2,7 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/base.xml" />
 
-    <property name="LOGSTASH_URL" value="222.111.195.42:5000" />
+    <property name="LOGSTASH_URL" value="3.34.43.230:5000" />
 
     <appender name="LOGSTASH_API" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>${LOGSTASH_URL}</destination>

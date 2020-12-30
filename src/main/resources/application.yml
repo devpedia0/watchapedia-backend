@@ -3,7 +3,7 @@ spring:
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     properties:
       hibernate:
         jdbc:
@@ -27,8 +27,8 @@ cloud:
     stack:
       auto: false
 
-logging:
-  level:
-    com.devpedia.watchapedia.controller: debug
-    com.devpedia.watchapedia.service: debug
-    org.hibernate.SQL: debug
+#logging:
+#  level:
+#    com.devpedia.watchapedia.controller: debug
+#    com.devpedia.watchapedia.service: debug
+#    org.hibernate.SQL: debug
