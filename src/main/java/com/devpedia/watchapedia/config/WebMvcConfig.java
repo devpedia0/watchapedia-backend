@@ -5,6 +5,7 @@ import com.devpedia.watchapedia.dto.enums.ContentTypeParameterConverter;
 import com.devpedia.watchapedia.dto.enums.InterestContentOrderConverter;
 import com.devpedia.watchapedia.dto.enums.RatingContentOrderConverter;
 import com.devpedia.watchapedia.logging.LoggingInterceptor;
+import com.devpedia.watchapedia.ratelimit.LimitInterceptor;
 import com.devpedia.watchapedia.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final LoggingInterceptor loggingInterceptor;
+    private final LimitInterceptor limitInterceptor;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -40,6 +42,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(limitInterceptor);
         registry.addInterceptor(loggingInterceptor).excludePathPatterns(WebSecurityConfig.SWAGGER_AUTH_WHITELIST);
     }
 }
