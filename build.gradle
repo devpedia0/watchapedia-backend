@@ -28,6 +28,10 @@ dependencies {
 
 	implementation 'com.querydsl:querydsl-jpa'
 
+	implementation 'com.giffing.bucket4j.spring.boot.starter:bucket4j-spring-boot-starter:0.2.0'
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'org.ehcache:ehcache'
+
 	implementation 'org.elasticsearch:elasticsearch:7.10.1'
 	implementation 'org.elasticsearch.client:elasticsearch-rest-client:7.10.1'
 	implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:7.10.1'

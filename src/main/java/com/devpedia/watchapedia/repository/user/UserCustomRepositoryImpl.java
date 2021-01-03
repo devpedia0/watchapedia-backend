@@ -183,7 +183,7 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
     public Map<String, Integer> getGroupedScoreCount(Long userId, ContentTypeParameter type) {
         List<Tuple> result = query
                 .select(
-                        score1.score.stringValue(),
+                        score1.score.doubleValue(),
                         score1.id.contentId.count()
                 )
                 .from(score1)
@@ -197,7 +197,7 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
 
         return result.stream()
                 .collect(Collectors.toMap(
-                        tuple -> tuple.get(score1.score.stringValue()),
+                        tuple -> String.valueOf(tuple.get(score1.score.doubleValue())),
                         tuple -> tuple.get(score1.id.contentId.count()).intValue()));
     }
 
