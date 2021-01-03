@@ -22,6 +22,12 @@ public class LoggingInterceptor extends HandlerInterceptorAdapter {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        if ((request.getHeader("user-agent") != null && request.getHeader("user-agent").contains("HealthChecker"))
+            || (request.getHeader("User-Agent") != null && request.getHeader("User-Agent").contains("HealthChecker")))
+            return;
+        if (request.getRequestURI().equals("/"))
+            return;
+
         if (request instanceof ContentCachingRequestWrapper && response instanceof ContentCachingResponseWrapper) {
             final ContentCachingRequestWrapper cachingRequest = (ContentCachingRequestWrapper) request;
             final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
