@@ -34,7 +34,6 @@ public class RedisRepository {
     public boolean isAllowed(String ip) {
         ValueOperations<String, String> operations = redisTemplate.opsForValue();
         String requests = operations.get(ip);
-        log.info(requests);
         if (StringUtils.isNotBlank(requests) && Integer.parseInt(requests) >= REQUESTS_PER_EXPIRE) {
             return false;
         }
