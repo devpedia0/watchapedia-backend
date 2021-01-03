@@ -19,8 +19,6 @@ spring:
   cache:
     redis:
       time-to-live: 43200000
-    jcache:
-      config: classpath:ehcache.xml
 
 cloud:
   aws:
@@ -28,19 +26,6 @@ cloud:
       static: ap-northeast-2
     stack:
       auto: false
-
-bucket4j:
-  enabled: true
-  filters:
-  - cache-name: buckets
-    http-response-body: '{ "status": 429, "code": "C008", "message": "Too many requests" }'
-    url: .*
-    rate-limits:
-    - expression: getRemoteAddr()
-      bandwidths:
-      - capacity: 5
-        time: 1
-        unit: seconds
 
 #logging:
 #  level:
