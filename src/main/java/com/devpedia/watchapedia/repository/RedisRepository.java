@@ -17,7 +17,7 @@ public class RedisRepository {
     private static final String REFRESH_TOKEN_MAP_KEY = "RefreshToken";
 
     private static final int EXPIRE_SECONDS = 5;
-    private static final int REQUESTS_PER_EXPIRE = 25;
+    private static final int REQUESTS_PER_EXPIRE = 50;
 
     private final StringRedisTemplate redisTemplate;
 
