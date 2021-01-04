@@ -255,7 +255,7 @@ public class ContentDto {
                     .countryCode(null)
                     .isWatchaContent(null)
                     .isNetflixContent(null)
-                    .author(book.getParticipants().get(0).getParticipant().getName())
+                    .author(book.getParticipants().size() > 0 ? book.getParticipants().get(0).getParticipant().getName() : null)
                     .dtype(book.getDtype())
                     .build();
         }
