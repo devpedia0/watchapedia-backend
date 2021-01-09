@@ -1,1 +1,75 @@
-.
+# watchapedia ZERO: 영화,책,TV 프로그램 추천 평가 서비스
+
+<div align="middle">
+  <img src="data:image/png;base64,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">
+</div>
+
+<p align="middle">
+<!-- tag -->
+  <a href="https://github.com/boostcamp-2020/Project12-B-Slack-Web/releases" target="_blank">
+    <img src="https://img.shields.io/github/v/release/boostcamp-2020/Project12-B-Slack-Web">
+  </a>
+<!-- doc -->
+  <a href="https://github.com/boostcamp-2020/Project12-B-Slack-Web/wiki" target="_blank">
+    <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
+  </a>
+<!-- issue -->
+  <a href="https://github.com/boostcamp-2020/Project12-B-Slack-Web/issues">
+    <img alt="issue tracking" src="https://img.shields.io/github/issues/boostcamp-2020/Project12-B-Slack-Web"/>
+  </a>
+</p>
+<p align="middle">
+<!-- tag -->
+  <img src='https://img.shields.io/static/v1?label=SpringBoot&message=0.0.0&color=blue'/>
+ <img src='https://img.shields.io/static/v1?label=JPA&message=0.0.0&color=important'/>
+  <img src='https://img.shields.io/static/v1?label=NodeJS&message=0.0.0&color=important'/>
+  <img src='https://img.shields.io/static/v1?label=MySQL&message=0.0.0&color=green'/>
+  <img src='https://img.shields.io/static/v1?label=Redis&message=0.0.0&color=green'/>
+  <img src='https://img.shields.io/static/v1?label=AWS&message=0.0.0&color=green'/>
+  <img src='https://img.shields.io/static/v1?label=Jenkins&message=0.0.0&color=lightgrey'/>
+  <img src='https://img.shields.io/static/v1?label=JIRA&message=0.0.0&color=lightgrey'/>
+  <img src='https://img.shields.io/static/v1?label=ELK&message=0.0.0&color=lightgrey'/>
+</p>
+
+<br />
+
+## :house: HomePage
+
+WATCHA PEDIA 프로젝트를 확인해보고 싶으시면 [홈페이지](https://amazing-bose-50642c.netlify.app/) 를 방문해주세요 :wink:
+
+테스트 계정  
+- id : test@naver.com  
+- pw: 1234
+<br />
+
+## :bookmark_tabs: 프로젝트 소개
+|![](https://user-images.githubusercontent.com/29701385/103897628-30e07680-5137-11eb-97b5-0400d85c2732.gif)|
+|---|
+
+왓챠피디아 - 영화,책,TV 프로그램 추천 및 평가 서비스를 Clone한 프로젝트입니다. 
+
+왓챠피디아(WATCHAPEDIA) (구 왓챠)는 한국의 [영화](https://namu.wiki/w/영화) 추천 서비스입니다. 사용자가 자신이 본 영화에 대해 별점을 매기면, 취향을 분석해 좋아할만한 영화를 알아서 추천해준다. 그뿐만 아니라 영화 평 작성, 자신만의 컬렉션 제작, 박스오피스 순위 제공 등 다양한 서비스를 제공합니다.
+
+<br />
+
+## :gear: 주요 개발 기능
+
+![](https://user-images.githubusercontent.com/29701385/103891839-ddb5f600-512d-11eb-84ba-24facdf02936.png)
+
+
+
+## :hammer_and_wrench: 기술 스택
+
+|![](https://user-images.githubusercontent.com/29701385/103969928-6d00ef00-51aa-11eb-82a1-f403f4db7b60.png)|
+|---|
+
+<br />
+
+## :pushpin: 팀소개
+###  Front-End
+- [하경윤](https://github.com/kyungyoonha)
+- [홍효석](https://github.com/hongcoder)
+
+### Back-End
+- [김관현](https://github.com/gwanhyeon)
+- [박경덕](https://github.com/wert1229)
